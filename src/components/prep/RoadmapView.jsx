@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Clock, BookOpen, ArrowUpRight, Sparkles, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
+import { auth } from '../../firebase/config';
 
 export const RoadmapView = () => {
   const { company, role, experience, getCached, setCached, toggleRoadmapStep, roadmap: steps } = useInterviewStore();
@@ -14,9 +15,15 @@ export const RoadmapView = () => {
     setError(null);
     try {
       const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
+      let idToken = '';
+      try {
+        if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
+      } catch (_) {}
+      const headers = { 'Content-Type': 'application/json' };
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch(API_URL + '/api/roadmap/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ company, role, experience })
       });
       if (!response.ok) {

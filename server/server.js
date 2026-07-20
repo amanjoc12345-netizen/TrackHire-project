@@ -21,7 +21,17 @@ process.on('uncaughtException', (err) => {
 
 const app = express();
 
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5000',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? (process.env.CLIENT_URL || 'https://trackhire.vercel.app')
+    : ALLOWED_ORIGINS
+}));
 app.use(express.json({ limit: '10mb' }));
 
 const apiLimiter = rateLimit({

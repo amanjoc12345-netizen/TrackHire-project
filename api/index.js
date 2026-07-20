@@ -13,7 +13,9 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'https://trackhire.vercel.app'
+}));
 app.use(express.json({ limit: '10mb' }));
 
 const apiLimiter = rateLimit({

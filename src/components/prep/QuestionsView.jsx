@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { Sparkles, Bookmark, CheckCircle2, ChevronDown, ChevronUp, Clock, AlertCircle, Brain, Target, Lightbulb, RefreshCw, BookOpen, ArrowRight } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
+import { auth } from '../../firebase/config';
 
 const SECTION_ICONS = {
   technical: Brain,
@@ -34,9 +35,15 @@ export const QuestionsView = () => {
     setSections(null);
     try {
       const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
+      let idToken = '';
+      try {
+        if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
+      } catch (_) {}
+      const headers = { 'Content-Type': 'application/json' };
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch(API_URL + '/api/questions/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ company, role, experience })
       });
       if (!response.ok) {

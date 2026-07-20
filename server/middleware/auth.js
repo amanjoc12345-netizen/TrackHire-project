@@ -15,22 +15,26 @@ if (!getApps().length) {
   if (serviceAccount) {
     initializeApp({ credential: cert(serviceAccount) });
   } else {
+    console.warn(
+      'WARNING: FIREBASE_SERVICE_ACCOUNT_KEY not set. '
+      + 'Firebase Auth will use application default credentials. '
+      + 'Set this env var in production (Render) for token verification to work.'
+    );
     initializeApp({ projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'careerpilot-ai-58262' });
   }
 }
+
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 
 export const requireAuth = async (req, res, next) => {
   const NODE_ENV = process.env.NODE_ENV;
   const VERCEL = process.env.VERCEL;
   const DEV_BYPASS_AUTH = process.env.DEV_BYPASS_AUTH === 'true';
-  const runningLocally = DEV_BYPASS_AUTH || (NODE_ENV !== 'production' && !VERCEL);
+  const runningLocally = DEV_BYPASS_AUTH && !isProduction;
 
-  console.log('\n--- [Auth Middleware Debug] ---');
-  console.log(`NODE_ENV: ${NODE_ENV}`);
-  console.log(`VERCEL: ${VERCEL}`);
-  console.log(`DEV_BYPASS_AUTH: ${DEV_BYPASS_AUTH}`);
-  console.log(`runningLocally (dev bypass enabled): ${runningLocally}`);
-  console.log(`req.headers.authorization: ${req.headers.authorization ? '(present)' : '(none)'}`);
+  if (DEV_BYPASS_AUTH && isProduction) {
+    console.error('FATAL: DEV_BYPASS_AUTH is set in production! Auth bypass disabled for safety.');
+  }
 
   if (runningLocally) {
     console.log('[Auth Middleware] Dev bypass ENABLED — injecting dev-user');
@@ -41,6 +45,13 @@ export const requireAuth = async (req, res, next) => {
     };
     return next();
   }
+
+  console.log('\n--- [Auth Middleware Debug] ---');
+  console.log(`NODE_ENV: ${NODE_ENV}`);
+  console.log(`VERCEL: ${VERCEL}`);
+  console.log(`DEV_BYPASS_AUTH: ${DEV_BYPASS_AUTH}`);
+  console.log(`runningLocally (dev bypass enabled): ${runningLocally}`);
+  console.log(`req.headers.authorization: ${req.headers.authorization ? '(present)' : '(none)'}`);
 
   const authHeader = req.headers.authorization;
 

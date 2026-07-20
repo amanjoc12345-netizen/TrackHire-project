@@ -73,11 +73,8 @@ ${jobDescription}
       'Content-Type': 'application/json'
     };
 
-    // Standard OpenRouter requests benefit from providing Referer/Title headers
-    if (isRealOpenRouter) {
-      headers['HTTP-Referer'] = 'http://localhost:5000';
-      headers['X-Title'] = 'TrackHire';
-    }
+    headers['HTTP-Referer'] = process.env.SITE_URL || 'https://trackhire.vercel.app';
+    headers['X-OpenRouter-Title'] = process.env.SITE_NAME || 'TrackHire';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);

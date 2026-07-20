@@ -3,14 +3,36 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const SUPPORTED_MODELS = [
+  'google/gemini-2.5-flash',
+  'openai/gpt-5.2',
+  'openai/gpt-5',
+  'anthropic/claude-sonnet-4',
+  'anthropic/claude-opus-4',
+  'meta-llama/llama-4-maverick',
+  'deepseek/deepseek-chat-v4',
+  'mistral/mistral-large-4'
+];
+
+const SITE_URL = process.env.SITE_URL
+  || (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'https://trackhire.vercel.app');
+
+const SITE_NAME = process.env.SITE_NAME || 'TrackHire';
+
+function pickModel() {
+  const configured = process.env.OPENROUTER_MODEL;
+  if (!configured) return 'google/gemini-2.5-flash';
+  return configured;
+}
+
 router.post('/', requireAuth, async (req, res) => {
   const { message, history, company, role, experience, activeTab } = req.body;
 
   if (!message) {
     return res.status(400).json({
-      error: {
-        message: 'Message is required.'
-      }
+      error: { message: 'Message is required.' }
     });
   }
 
@@ -18,22 +40,20 @@ router.post('/', requireAuth, async (req, res) => {
 
   if (!apiKey) {
     return res.status(500).json({
-      error: {
-        message: 'API key is missing on the server. Please configure OPENROUTER_API_KEY.'
-      }
+      error: { message: 'API key is missing on the server. Please configure OPENROUTER_API_KEY in your Render environment variables.' }
     });
   }
 
   const isOpenRouterKey = apiKey.startsWith('sk-or-');
-  const endpoint = isOpenRouterKey
-    ? 'https://openrouter.ai/api/v1/chat/completions'
-    : 'https://opencode.ai/zen/v1/chat/completions';
+  if (!isOpenRouterKey) {
+    return res.status(500).json({
+      error: { message: 'Invalid API key format. OpenRouter keys start with "sk-or-". Generate a new key at https://openrouter.ai/keys' }
+    });
+  }
 
-  const modelName = isOpenRouterKey
-    ? (process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash')
-    : (process.env.OPENCODE_MODEL || process.env.OPENROUTER_MODEL || 'deepseek-v4-flash-free');
+  const endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+  const modelName = pickModel();
 
-  // Build system prompt and message history
   const systemPrompt = `You are an expert AI Interview Coach helping a candidate prepare for an interview.
 Candidate Context:
 - Target Company: ${company || 'General Company'}
@@ -64,22 +84,18 @@ Respond to the candidate's query in a helpful, encouraging, and highly professio
 
   messages.push({ role: 'user', content: message });
 
-  // Log user message, endpoint, and requested model
   console.log('\n--- [Interview Coach Request] ---');
   console.log(`User message: "${message}"`);
   console.log(`Endpoint: ${endpoint}`);
-  console.log(`Requested Model name: ${modelName}`);
+  console.log(`Requested Model: ${modelName}`);
 
   try {
     const headers = {
       Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'HTTP-Referer': SITE_URL,
+      'X-OpenRouter-Title': SITE_NAME
     };
-
-    if (isOpenRouterKey) {
-      headers['HTTP-Referer'] = 'http://localhost:5000';
-      headers['X-Title'] = 'TrackHire';
-    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -100,31 +116,42 @@ Respond to the candidate's query in a helpful, encouraging, and highly professio
     if (!response.ok) {
       let errorBody;
       try { errorBody = await response.json(); } catch { errorBody = await response.text(); }
-      console.error('[Interview Coach Error Response]:', errorBody);
+
+      const errorMsg = errorBody?.error?.message || `API returned status ${response.status}`;
+      console.error('[Interview Coach Error Response]:', errorMsg);
+
+      if (response.status === 404 || response.status === 400) {
+        const hint = SUPPORTED_MODELS.includes(modelName)
+          ? ''
+          : ` Model "${modelName}" may be deprecated. Set OPENROUTER_MODEL to one of: ${SUPPORTED_MODELS.join(', ')}`;
+        return res.status(response.status).json({
+          error: { message: errorMsg + hint }
+        });
+      }
+
       return res.status(response.status).json({
-        error: {
-          message: errorBody?.error?.message || `API returned status ${response.status}`
-        },
+        error: { message: errorMsg },
         details: errorBody
       });
     }
 
     const data = await response.json();
 
-    // Print logs as requested:
-    // User message, Endpoint, Model name, OpenRouter response, Final response sent to frontend
-    console.log(`Model name: ${data.model}`);
-    console.log('OpenRouter response:', JSON.stringify(data, null, 2));
-    console.log('Final response sent to frontend:', JSON.stringify(data.choices?.[0]?.message || {}, null, 2));
+    console.log(`Model used: ${data.model}`);
     console.log('---------------------------------\n');
 
     return res.json(data);
   } catch (err) {
     console.error('[Interview Coach Route Error]:', err);
+
+    if (err.name === 'AbortError') {
+      return res.status(504).json({
+        error: { message: 'The AI provider took too long to respond. Please try again.' }
+      });
+    }
+
     return res.status(500).json({
-      error: {
-        message: err.message || 'Internal Server Error'
-      }
+      error: { message: err.message || 'Internal Server Error' }
     });
   }
 });

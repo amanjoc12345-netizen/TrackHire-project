@@ -73,10 +73,8 @@ Experience: ${experience || 'Not specified'}`;
       'Content-Type': 'application/json'
     };
 
-    if (isOpenRouterKey) {
-      headers['HTTP-Referer'] = 'http://localhost:5000';
-      headers['X-Title'] = 'TrackHire';
-    }
+    headers['HTTP-Referer'] = process.env.SITE_URL || 'https://trackhire.vercel.app';
+    headers['X-OpenRouter-Title'] = process.env.SITE_NAME || 'TrackHire';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
