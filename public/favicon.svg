@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="24" fill="#0F172A" />
+  <!-- Left vertical bar (Slate-400) -->
+  <rect x="28" y="32" width="10" height="42" rx="4" fill="#94A3B8" />
+  <!-- Middle cross bar (Blue-500) -->
+  <rect x="28" y="48" width="44" height="10" rx="4" fill="#3B82F6" />
+  <!-- Right vertical bar (Blue-500) -->
+  <rect x="62" y="32" width="10" height="42" rx="4" fill="#3B82F6" />
+  <!-- Top bar (White) -->
+  <rect x="28" y="22" width="44" height="10" rx="4" fill="#FFFFFF" />
+</svg>

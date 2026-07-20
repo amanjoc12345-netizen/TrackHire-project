@@ -1,0 +1,361 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans antialiased selection:bg-brand-100 selection:text-brand-900;
+  }
+}
+
+/* Custom utilities */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+}
+
+.transition-custom {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================================================
+   PREMIUM NEUTRAL-DARK DESIGN SYSTEM (Notion / Linear / Vercel style)
+   ================================================== */
+.dark {
+  /* Override Tailwind variable mappings */
+  --color-slate-950: #050505;  /* Main Background */
+  --color-slate-900: #161616;  /* Cards Background */
+  --color-slate-800: #050505;  /* Secondary background, Sidebar */
+  
+  /* Borders */
+  --color-slate-200: #2a2a2a;
+  --color-slate-202: #2a2a2a;
+  --color-slate-205: #2a2a2a;
+  --color-slate-250: #2a2a2a;
+  --color-slate-300: #2a2a2a;
+  
+  /* Text defaults */
+  --color-slate-909: #ffffff;
+  --color-slate-855: #ffffff;
+  --color-slate-705: #b5b5b5;
+  --color-slate-650: #b5b5b5;
+  --color-slate-655: #b5b5b5;
+  --color-slate-550: #7a7a7a;
+  --color-slate-505: #7a7a7a;
+  --color-slate-450: #7a7a7a;
+  --color-slate-400: #7a7a7a;
+  --color-slate-300: #b5b5b5;
+  --color-slate-50: #ffffff;
+
+  /* Custom component helper backgrounds */
+  --color-slate-905: #161616;
+  --color-slate-909: #161616;
+  --color-slate-955: #0b0b0b;  /* Secondary Background */
+  --color-slate-850: #1e1e1e;  /* Elevated Cards, dropdown menu bg */
+
+  /* Accent brand color mappings */
+  --color-brand-600: #3b82f6;
+  --color-brand-700: #2563eb;
+}
+
+/* ==================================================
+   GLOBAL ELEMENT LEVEL DARK MODE OVERRIDES (Anti-Inversion)
+   ================================================== */
+
+/* Main Page Background overrides */
+.dark body,
+.dark .bg-slate-50,
+.dark .bg-zinc-50,
+.dark [class*="bg-slate-950"] {
+  background-color: #050505 !important;
+}
+
+/* Secondary & Sidebar backgrounds */
+.dark .bg-slate-100,
+.dark .bg-zinc-100,
+.dark [class*="bg-slate-955"] {
+  background-color: #0b0b0b !important;
+}
+
+/* Cards & Grid Background overrides */
+.dark .bg-white,
+.dark [class*="bg-slate-900"],
+.dark [class*="bg-slate-905"],
+.dark [class*="bg-slate-909"] {
+  background-color: #0c0c0d !important;
+}
+
+/* Elevated Cards background */
+.dark [class*="bg-slate-850"] {
+  background-color: #121214 !important;
+}
+
+/* Grayscale neutral text overrides - Prevents black text on dark surfaces */
+.dark .text-slate-900,
+.dark .text-zinc-900,
+.dark .text-gray-900,
+.dark .text-black,
+.dark .text-slate-855,
+.dark .text-slate-800,
+.dark .text-zinc-800,
+.dark .text-gray-800,
+.dark .text-slate-700,
+.dark .text-zinc-700,
+.dark .text-gray-700,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #ffffff !important;
+}
+
+.dark .text-slate-600,
+.dark .text-zinc-650,
+.dark .text-zinc-600,
+.dark .text-gray-600,
+.dark .text-slate-705,
+.dark .text-slate-650,
+.dark .text-slate-655,
+.dark .text-slate-700 {
+  color: #b5b5b5 !important;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-zinc-500,
+.dark .text-zinc-400,
+.dark .text-gray-550,
+.dark .text-gray-500,
+.dark .text-gray-400,
+.dark .text-slate-550,
+.dark .text-slate-505,
+.dark .text-slate-450 {
+  color: #7a7a7a !important;
+}
+
+/* Border overrides */
+.dark [class*="border-slate-200"],
+.dark [class*="border-slate-202"],
+.dark [class*="border-slate-205"],
+.dark [class*="border-slate-250"],
+.dark [class*="border-slate-300"],
+.dark [class*="border-gray-200"],
+.dark [class*="border-gray-300"],
+.dark [class*="border-slate-800"],
+.dark [class*="border-slate-850"] {
+  border-color: #2a2a2a !important;
+}
+
+/* Primary Button overrides */
+.dark button[class*="bg-brand-600"],
+.dark a[class*="bg-brand-600"] {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+.dark button[class*="bg-brand-600"]:hover,
+.dark a[class*="bg-brand-600"]:hover {
+  background-color: #e5e5e5 !important;
+  color: #000000 !important;
+  border-color: #e5e5e5 !important;
+}
+
+/* Secondary & Outline Button overrides */
+.dark button[class*="bg-slate-100"],
+.dark a[class*="bg-slate-100"],
+.dark button[class*="bg-white"][class*="border-slate-300"],
+.dark a[class*="bg-white"][class*="border-slate-300"],
+.dark button[class*="bg-white"][class*="border-slate-250"],
+.dark a[class*="bg-white"][class*="border-slate-250"] {
+  background-color: #161616 !important;
+  border: 1px solid #242424 !important;
+  color: #b5b5b5 !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.dark button[class*="bg-slate-100"]:hover,
+.dark a[class*="bg-slate-100"]:hover,
+.dark button[class*="bg-white"][class*="border-slate-300"]:hover,
+.dark a[class*="bg-white"][class*="border-slate-300"]:hover,
+.dark button[class*="bg-white"][class*="border-slate-250"]:hover,
+.dark a[class*="bg-white"][class*="border-slate-250"]:hover {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border-color: #2a2a2a !important;
+}
+
+/* Ghost Button overrides */
+.dark button[class*="hover:bg-slate-100"],
+.dark a[class*="hover:bg-slate-100"] {
+  background-color: transparent !important;
+  color: #b5b5b5 !important;
+  border-radius: 8px !important;
+}
+.dark button[class*="hover:bg-slate-100"]:hover,
+.dark a[class*="hover:bg-slate-100"]:hover {
+  background-color: #161616 !important;
+  color: #ffffff !important;
+}
+
+/* Form inputs & dropdown selects in Dark Mode */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark textarea,
+.dark select {
+  background-color: #111111 !important;
+  border: 1px solid #2a2a2a !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark input[type="text"]::placeholder,
+.dark input[type="email"]::placeholder,
+.dark input[type="password"]::placeholder,
+.dark textarea::placeholder {
+  color: #777777 !important;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #ffffff !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Sidebar Active/Hover controls */
+.dark button[class*="bg-brand-50"],
+.dark a[class*="bg-brand-50"],
+.dark button[class*="dark:bg-brand-950"],
+.dark a[class*="dark:bg-brand-950"] {
+  background-color: #121214 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  border: none !important;
+}
+
+.dark button[class*="hover:bg-slate-50"]:hover,
+.dark a[class*="hover:bg-slate-50"]:hover,
+.dark button[class*="dark:hover:bg-slate-855"]:hover,
+.dark a[class*="dark:hover:bg-slate-855"]:hover,
+.dark button[class*="dark:hover:bg-slate-850"]:hover,
+.dark a[class*="dark:hover:bg-slate-850"]:hover {
+  background-color: #1c1c1f !important;
+  color: #ffffff !important;
+}
+
+/* iOS switches */
+.dark button[role="switch"][aria-checked="true"] {
+  background-color: #22c55e !important;
+}
+.dark button[role="switch"][aria-checked="false"] {
+  background-color: #2a2a2a !important;
+}
+
+/* Sticky Nav Headers */
+.dark nav {
+  background-color: rgba(5, 5, 5, 0.8) !important;
+  border-bottom: 1px solid #1e1e1e !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Floating Card Overrides */
+.dark .card,
+.dark [class*="bg-white"][class*="border-slate-200"],
+.dark [class*="bg-white"][class*="border-slate-202"],
+.dark [class*="bg-white"][class*="border-slate-205"],
+.dark [class*="bg-slate-905"][class*="border-slate-200"],
+.dark [class*="bg-slate-905"][class*="border-slate-205"] {
+  background-color: #0c0c0d !important;
+  border: 1px solid #1f1f23 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4) !important;
+  padding: 16px !important;
+  margin-bottom: 8px !important;
+  transition: all 150ms ease !important;
+}
+
+@media (min-width: 640px) {
+  .dark .card,
+  .dark [class*="bg-white"][class*="border-slate-200"],
+  .dark [class*="bg-white"][class*="border-slate-202"],
+  .dark [class*="bg-white"][class*="border-slate-205"],
+  .dark [class*="bg-slate-905"][class*="border-slate-200"],
+  .dark [class*="bg-slate-905"][class*="border-slate-205"] {
+    padding: 24px !important;
+  }
+}
+
+/* Hover transitions (SaaS minimal style) */
+.dark [class*="bg-white"][class*="border-slate-202"]:hover,
+.dark [class*="bg-white"][class*="border-slate-205"]:hover {
+  transform: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.6) !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Table styling */
+.dark table,
+.dark tr,
+.dark th,
+.dark td {
+  background-color: #111111 !important;
+  border-color: #1e1e1e !important;
+  color: #b5b5b5 !important;
+}
+.dark th {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.dark tr:hover td {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+/* Resume analyzer drag area */
+.dark [class*="border-dashed"] {
+  border-color: #2a2a2a !important;
+  background-color: #0b0b0b !important;
+  border-radius: 12px !important;
+}
+.dark [class*="border-dashed"]:hover {
+  border-color: #ffffff !important;
+  background-color: #111111 !important;
+}
