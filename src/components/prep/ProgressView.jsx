@@ -5,7 +5,14 @@ import { useInterviewStore } from '../../store/interviewStore';
 export const ProgressView = () => {
   const { roadmap, completedQuestions, bookmarkedQuestions, getCached } = useInterviewStore();
   const questions = getCached('questions');
-  const allQuestions = questions ? questions.flatMap(s => s.questions) : [];
+  // Backward compatible: handle both flat array and old {sections: [{questions}]} format
+  const allQuestions = questions
+    ? Array.isArray(questions)
+      ? questions
+      : questions.sections
+        ? questions.sections.flatMap(s => s.questions || [])
+        : questions.questions || []
+    : [];
 
   const totalRoadmapSteps = roadmap.length;
   const completedRoadmapSteps = roadmap.filter(s => s.completed).length;

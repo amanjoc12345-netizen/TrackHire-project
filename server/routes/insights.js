@@ -1,130 +1,75 @@
-import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import express from "express";
+import { requireAuth } from "../middleware/auth.js";
+import { generateJSON } from "../services/aiService.js";
 
 const router = express.Router();
 
-router.post('/generate', requireAuth, async (req, res) => {
-  const { company, role, experience } = req.body;
+router.post("/generate", requireAuth, async (req, res) => {
+  try {
+    const { company, role, experience } = req.body;
 
-  if (!company || !role) {
-    return res.status(400).json({
-      error: { message: 'Both company and role are required.' }
-    });
-  }
+    if (!company || !role) {
+      return res.status(400).json({
+        error: { message: "Both company and role are required." },
+      });
+    }
 
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENCODE_API_KEY;
+    const prompt = `You are an expert career coach with deep knowledge of tech company interview processes. Provide detailed interview insights for:
 
-  if (!apiKey) {
-    return res.status(500).json({
-      error: { message: 'API key is missing on the server.' }
-    });
-  }
+Company: ${company}
+Role: ${role}
+Experience Level: ${experience || "Not specified"}
 
-  const isOpenRouterKey = apiKey.startsWith('sk-or-');
-  const endpoint = isOpenRouterKey
-    ? 'https://openrouter.ai/api/v1/chat/completions'
-    : 'https://opencode.ai/zen/v1/chat/completions';
+COMPANY-SPECIFIC INSIGHTS — Generate insights specific to ${company} for the ${role} position.
 
-  const modelName = isOpenRouterKey
-    ? (process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash')
-    : (process.env.OPENCODE_MODEL || process.env.OPENROUTER_MODEL || 'deepseek-v4-flash-free');
+STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
+- Output ONLY a valid JSON object. Nothing else.
+- No markdown formatting, no code fences, no backticks.
+- No explanations, notes, or any text before or after the JSON.
+- First character must be {.
+- Last character must be }.
+- Use double quotes for all strings and keys — no single quotes.
+- No trailing commas.
 
-  const systemPrompt = `You are an expert company interview insights analyst. You provide detailed, company-specific interview preparation insights based on industry knowledge. Return ONLY valid JSON. No markdown, no code fences.`;
-
-  const userPrompt = `Provide detailed interview insights for a ${role} position at ${company} (Experience: ${experience || 'Not specified'}).
-
-Return a JSON object with exactly this structure:
+Return ONLY a valid JSON object with this exact structure:
 {
-  "rounds": 4,
-  "stages": ["Stage 1 Name", "Stage 2 Name", "Stage 3 Name", "Stage 4 Name"],
-  "difficulty": "Easy|Medium|Hard",
-  "topics": ["Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5"],
-  "expectations": "Detailed description of what the company expects from candidates for this role",
-  "tips": ["Tip 1", "Tip 2", "Tip 3", "Tip 4"],
-  "culture": "Description of company culture",
+  "rounds": <number of interview rounds>,
+  "difficulty": "<Easy/Medium/Hard>",
+  "culture": "<2-3 sentence description of company culture from interview perspective>",
+  "stages": ["<stage1 name>", "<stage2 name>", ...],
+  "frequentlyAskedTopics": ["<topic1>", "<topic2>", "<topic3>", ...],
+  "salaryExpectations": "<salary range for ${role} at ${experience} level>",
+  "preparationTips": ["<tip1>", "<tip2>", "<tip3>", ...],
+  "recentTechnologies": ["<tech1>", "<tech2>", ...],
+  "expectations": "<2-3 sentence paragraph about what the company expects for this role>",
+  "tips": ["<tip1>", "<tip2>", "<tip3>", ...],
   "experiences": [
     {
-      "role": "${role}",
-      "summary": "Realistic interview experience summary",
-      "outcome": "Offer received|Rejected after final round"
+      "role": "<role name>",
+      "outcome": "<Offer/Rejected>",
+      "summary": "<what the candidate experienced>"
     }
   ]
 }
 
-Make the insights specific to ${company}:
-- Google: Focus on algorithms, Googlyness, analytical thinking
-- Microsoft: Focus on problem-solving, cultural fit, LeetCode-style
-- Amazon: Leadership Principles, behavioral, scalable systems
-- Stripe: API design, clean code, integration patterns
-- Adobe: Frontend focus, design systems, creative tech
-- For other companies: use industry knowledge about their known interview process
+CRITICAL: "frequentlyAskedTopics" MUST contain 4-6 topics commonly asked at ${company} for ${role}. "salaryExpectations" MUST be a realistic salary range. "recentTechnologies" MUST list technologies ${company} currently uses for this role.`;
 
-Company: ${company}
-Role: ${role}
-Experience: ${experience || 'Not specified'}`;
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
-  ];
-
-  console.log('\n--- [Insights Generate Request] ---');
-  console.log(`Company: ${company}, Role: ${role}, Experience: ${experience}`);
-
-  try {
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    };
-
-    headers['HTTP-Referer'] = process.env.SITE_URL || 'https://trackhire.vercel.app';
-    headers['X-OpenRouter-Title'] = process.env.SITE_NAME || 'TrackHire';
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: modelName,
-        messages,
-        temperature: 0.7,
-        response_format: { type: 'json_object' }
-      }),
-      signal: controller.signal
+    const parsed = await generateJSON(prompt, {
+      maxRetries: 1,
+      structureHint: "{rounds, difficulty, culture, stages, frequentlyAskedTopics, salaryExpectations, preparationTips, recentTechnologies, expectations, tips, experiences}",
     });
 
-    clearTimeout(timeoutId);
+    return res.status(200).json(parsed);
+  } catch (error) {
+    console.error("[Insights] Error:", error);
 
-    if (!response.ok) {
-      let errorBody;
-      try { errorBody = await response.json(); } catch { errorBody = await response.text(); }
-      console.error('[Insights Generate Error]:', errorBody);
-      return res.status(response.status).json({
-        error: { message: errorBody?.error?.message || `API returned status ${response.status}` }
-      });
-    }
-
-    const data = await response.json();
-
-    let insightsData;
-    try {
-      insightsData = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-    } catch {
-      insightsData = {};
-    }
-
-    console.log(`[Insights Generate] Model: ${data.model}, Rounds: ${insightsData.rounds || 'N/A'}`);
-    console.log('---------------------------------\n');
-
-    return res.json(insightsData);
-  } catch (err) {
-    console.error('[Insights Generate Route Error]:', err);
     return res.status(500).json({
-      error: { message: err.message || 'Internal Server Error' }
+      error: {
+        message: error.message || "Internal Server Error",
+      },
     });
   }
 });
 
 export default router;
+

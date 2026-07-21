@@ -1,126 +1,83 @@
-import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import express from "express";
+import { requireAuth } from "../middleware/auth.js";
+import { generateJSON } from "../services/aiService.js";
 
 const router = express.Router();
 
-router.post('/generate', requireAuth, async (req, res) => {
-  const { company, role, experience } = req.body;
+router.post("/generate", requireAuth, async (req, res) => {
+  try {
+    const { company, role, experience } = req.body;
 
-  if (!company || !role) {
-    return res.status(400).json({
-      error: { message: 'Both company and role are required.' }
-    });
-  }
+    if (!company || !role) {
+      return res.status(400).json({
+        error: { message: "Both company and role are required." },
+      });
+    }
 
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENCODE_API_KEY;
+    const prompt = `You are an expert interview preparation coach. Create a detailed step-by-step study roadmap for:
 
-  if (!apiKey) {
-    return res.status(500).json({
-      error: { message: 'API key is missing on the server.' }
-    });
-  }
+Company: ${company}
+Role: ${role}
+Experience Level: ${experience || "Not specified"}
 
-  const isOpenRouterKey = apiKey.startsWith('sk-or-');
-  const endpoint = isOpenRouterKey
-    ? 'https://openrouter.ai/api/v1/chat/completions'
-    : 'https://opencode.ai/zen/v1/chat/completions';
+ROLE-SPECIFIC ROADMAP — The roadmap MUST be tailored specifically to ${role}:
 
-  const modelName = isOpenRouterKey
-    ? (process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash')
-    : (process.env.OPENCODE_MODEL || process.env.OPENROUTER_MODEL || 'deepseek-v4-flash-free');
+- For Frontend Developer / React Developer: Steps should cover HTML/CSS fundamentals, JavaScript deep dive, TypeScript, React ecosystem, State management, Performance optimization, Frontend System Design, Web APIs, Accessibility, Testing
+- For Backend Developer: Steps should cover Node.js/Express, REST/GraphQL APIs, Database design (SQL/NoSQL), Redis caching, Authentication/Authorization, Microservices, System Design, DevOps basics
+- For Full Stack Developer: Steps should cover both frontend and backend fundamentals, database design, deployment, CI/CD, System Design, Full Stack architecture
+- For AI/ML Engineer: Steps should cover Python/NumPy/Pandas, Statistics/Linear Algebra, ML algorithms, Deep Learning, LLMs/Transformers, MLOps, AI System Design, Model deployment
+- For Data Analyst: Steps should cover SQL, Excel, Python, Statistics, Data Visualization, BI Tools, A/B Testing
+- For Software Engineer (General): Steps should cover DSA, OOP, Databases, System Design, Behavioral prep
 
-  const systemPrompt = `You are an expert interview preparation roadmap generator. You create personalized step-by-step study roadmaps for tech candidates. Return ONLY valid JSON. No markdown, no code fences.`;
+Also consider:
+- The candidate has ${experience || "Not specified"} years of experience — tailor depth accordingly
+- The target company is ${company} — include company-specific preparation tips
 
-  const userPrompt = `Create a personalized interview preparation roadmap for a ${role} position at ${company} (Experience: ${experience || 'Not specified'}).
+STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
+- Output ONLY a valid JSON object. Nothing else.
+- No markdown formatting, no code fences, no backticks.
+- No explanations, notes, or any text before or after the JSON.
+- First character must be {.
+- Last character must be }.
+- Use double quotes for all strings and keys — no single quotes.
+- No trailing commas.
 
-Return a JSON object with exactly this structure:
+Return ONLY a valid JSON object with this exact structure:
 {
   "steps": [
     {
-      "id": "step1",
-      "name": "Topic Name",
-      "description": "Description of what to study and why it matters for this role",
-      "estimatedTime": "X hours",
-      "resourceLink": "https://example.com/resource",
-      "topics": ["Sub-topic 1", "Sub-topic 2"]
+      "id": "<unique-id-like-step-1>",
+      "name": "<clear step title>",
+      "description": "<detailed description of what to study/practice>",
+      "estimatedTime": "<time estimate like 2-3 days>",
+      "resourceLink": "<url to relevant learning resource>",
+      "completed": false
     }
   ]
 }
 
-Generate 8-12 steps. The roadmap must be specific to the role:
-- For Frontend: HTML semantics, CSS layouts, JavaScript (closures, event loop, async), TypeScript, React/Angular, Performance, Testing, Build tools, System Design basics
-- For Backend: Language fundamentals, APIs (REST/GraphQL), Databases (SQL/NoSQL), Caching, Auth, Message queues, Microservices, Deployment, System Design
-- For AI/ML: Python, NumPy, Pandas, ML algorithms, Deep Learning, TensorFlow/PyTorch, MLOps, System Design, Behavioral
-- For Data Analyst: SQL, Excel, Statistics, PowerBI/Tableau, Python, Data visualization, Business acumen, Case studies
-- For Full Stack: Both frontend and backend topics
-- For React Developer: React core, Hooks, State management, Next.js, Testing, Performance, Build tools
+Generate 6-10 comprehensive steps. Each step MUST be directly relevant to ${role}.`;
 
-Company: ${company}
-Role: ${role}
-Experience: ${experience || 'Not specified'}`;
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
-  ];
-
-  console.log('\n--- [Roadmap Generate Request] ---');
-  console.log(`Company: ${company}, Role: ${role}, Experience: ${experience}`);
-
-  try {
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    };
-
-    headers['HTTP-Referer'] = process.env.SITE_URL || 'https://trackhire.vercel.app';
-    headers['X-OpenRouter-Title'] = process.env.SITE_NAME || 'TrackHire';
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: modelName,
-        messages,
-        temperature: 0.7,
-        response_format: { type: 'json_object' }
-      }),
-      signal: controller.signal
+    const parsed = await generateJSON(prompt, {
+      maxRetries: 1,
+      structureHint: "{steps: [{id, name, description, estimatedTime, resourceLink, completed}]}",
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      let errorBody;
-      try { errorBody = await response.json(); } catch { errorBody = await response.text(); }
-      console.error('[Roadmap Generate Error]:', errorBody);
-      return res.status(response.status).json({
-        error: { message: errorBody?.error?.message || `API returned status ${response.status}` }
-      });
+    if (!parsed?.steps?.length) {
+      throw new Error("No roadmap steps were generated.");
     }
 
-    const data = await response.json();
+    return res.status(200).json(parsed);
+  } catch (error) {
+    console.error("[Roadmap] Error:", error);
 
-    let roadmapData;
-    try {
-      roadmapData = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-    } catch {
-      roadmapData = { steps: [] };
-    }
-
-    console.log(`[Roadmap Generate] Model: ${data.model}, Steps: ${roadmapData.steps?.length || 0}`);
-    console.log('---------------------------------\n');
-
-    return res.json(roadmapData);
-  } catch (err) {
-    console.error('[Roadmap Generate Route Error]:', err);
     return res.status(500).json({
-      error: { message: err.message || 'Internal Server Error' }
+      error: {
+        message: error.message || "Internal Server Error",
+      },
     });
   }
 });
 
 export default router;
+

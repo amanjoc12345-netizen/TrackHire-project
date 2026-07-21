@@ -11,7 +11,10 @@ import {
   Sparkles,
   AlertCircle,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  DollarSign,
+  TrendingUp,
+  Cpu
 } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
 import { auth } from '../../firebase/config';
@@ -31,7 +34,7 @@ export const CompanyInsightsView = () => {
       let idToken = '';
       try {
         if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
-      } catch (_) {}
+      } catch (_) { }
       const headers = { 'Content-Type': 'application/json' };
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch(API_URL + '/api/insights/generate', {
@@ -91,7 +94,7 @@ export const CompanyInsightsView = () => {
             <span className="h-2 w-2 bg-brand-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
             <span className="h-2 w-2 bg-brand-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
-          <span className="text-sm text-slate-500 dark:text-slate-400">Analyzing {company} interview patterns...</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">Analyzing {company} interview patterns for {role}...</span>
         </div>
       </div>
     );
@@ -128,7 +131,7 @@ export const CompanyInsightsView = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-3xs flex gap-3.5 items-start">
           <div className="p-2 bg-blue-50 dark:bg-blue-955/35 text-blue-600 dark:text-blue-400 rounded">
             <Layers className="h-4 w-4" />
@@ -145,9 +148,8 @@ export const CompanyInsightsView = () => {
           </div>
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-500 tracking-wider">Difficulty Level</span>
-            <span className={`block text-sm font-bold mt-0.5 ${
-              insights.difficulty === 'Hard' ? 'text-red-600 dark:text-red-400' : 'text-amber-605 dark:text-amber-400'
-            }`}>{insights.difficulty || 'N/A'}</span>
+            <span className={`block text-sm font-bold mt-0.5 ${insights.difficulty === 'Hard' ? 'text-red-600 dark:text-red-400' : 'text-amber-605 dark:text-amber-400'
+              }`}>{insights.difficulty || 'N/A'}</span>
           </div>
         </div>
 
@@ -160,6 +162,18 @@ export const CompanyInsightsView = () => {
             <span className="block text-sm font-bold text-slate-900 dark:text-white mt-0.5">{insights.stages?.length || 0} Stages</span>
           </div>
         </div>
+
+        {insights.salaryExpectations && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-3xs flex gap-3.5 items-start">
+            <div className="p-2 bg-purple-50 dark:bg-purple-955/35 text-purple-600 dark:text-purple-400 rounded">
+              <DollarSign className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-500 tracking-wider">Salary Expectation</span>
+              <span className="block text-sm font-bold text-slate-900 dark:text-white mt-0.5">{insights.salaryExpectations}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -214,6 +228,60 @@ export const CompanyInsightsView = () => {
         </div>
       </div>
 
+      {insights.frequentlyAskedTopics && insights.frequentlyAskedTopics.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 md:p-6 shadow-3xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <TrendingUp className="h-4.5 w-4.5 text-slate-455" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Frequently Asked Topics</h3>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {insights.frequentlyAskedTopics.map((topic, idx) => (
+              <span key={idx} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold">
+                {topic}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {insights.recentTechnologies && insights.recentTechnologies.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 md:p-6 shadow-3xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <Cpu className="h-4.5 w-4.5 text-slate-455" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Recent Technologies</h3>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {insights.recentTechnologies.map((tech, idx) => (
+              <span key={idx} className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {insights.preparationTips && insights.preparationTips.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 md:p-6 shadow-3xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <CheckSquare className="h-4.5 w-4.5 text-slate-455" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Preparation Plan</h3>
+          </div>
+
+          <div className="space-y-3">
+            {insights.preparationTips.map((tip, idx) => (
+              <div key={idx} className="flex gap-2.5 items-start text-xs">
+                <span className="h-5 w-5 bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                  {idx + 1}
+                </span>
+                <p className="text-slate-600 dark:text-slate-350 leading-relaxed font-medium pt-0.5">{tip}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {insights.experiences && insights.experiences.length > 0 && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 md:p-6 shadow-3xs space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -227,11 +295,10 @@ export const CompanyInsightsView = () => {
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-800 dark:text-slate-200">{exp.role}</span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                      exp.outcome?.includes('Offer')
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${exp.outcome?.includes('Offer')
                         ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400'
                         : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450'
-                    }`}>
+                      }`}>
                       {exp.outcome}
                     </span>
                   </div>
@@ -259,3 +326,4 @@ export const CompanyInsightsView = () => {
     </div>
   );
 };
+

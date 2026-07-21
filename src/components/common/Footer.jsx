@@ -11,10 +11,10 @@ export const Footer = () => {
   return (
     <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 transition-colors duration-200">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        
+
         {/* Main Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 mb-12 sm:mb-16">
-          
+
           {/* Logo & Attribute Column */}
           <div className="col-span-2 flex flex-col gap-4">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 group self-start">
@@ -30,7 +30,7 @@ export const Footer = () => {
               <span>TrackHire &copy; {currentYear}</span>
               <span>&bull;</span>
               <span className="flex items-center gap-0.5">
-                Built with <Heart className="h-3 w-3 text-red-500 fill-red-500" /> by aman
+                Built with <Heart className="h-3 w-3 text-red-500 fill-red-500" /> by Aman joshi
               </span>
             </div>
           </div>
@@ -63,25 +63,25 @@ export const Footer = () => {
             A premium job tracking application. Designed for career builders.
           </p>
           <div className="flex items-center gap-4.5 text-slate-405 dark:text-slate-500">
-            <a 
-              href="https://github.com" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="TrackHire GitHub"
               className="hover:text-slate-950 dark:hover:text-white transition-colors"
             >
               <Github className="h-4.5 w-4.5" />
             </a>
-            <a 
-              href="https://linkedin.com" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="TrackHire LinkedIn"
               className="hover:text-slate-950 dark:hover:text-white transition-colors"
             >
               <Linkedin className="h-4.5 w-4.5" />
             </a>
-            <a 
+            <a
               href="mailto:support@trackhire.com"
               aria-label="TrackHire Email"
               className="hover:text-slate-950 dark:hover:text-white transition-colors"

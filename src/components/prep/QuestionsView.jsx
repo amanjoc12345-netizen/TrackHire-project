@@ -3,28 +3,20 @@ import { Sparkles, Bookmark, CheckCircle2, ChevronDown, ChevronUp, Clock, AlertC
 import { useInterviewStore } from '../../store/interviewStore';
 import { auth } from '../../firebase/config';
 
-const SECTION_ICONS = {
-  technical: Brain,
-  coding: Lightbulb,
-  'machine-coding': Sparkles,
-  'system-design': Target,
-  behavioral: BookOpen,
-  hr: AlertCircle
-};
-
-const SECTION_COLORS = {
-  technical: { bg: 'bg-indigo-50 dark:bg-indigo-950/20', border: 'border-indigo-200 dark:border-indigo-900/50', badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
-  coding: { bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-900/50', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
-  'machine-coding': { bg: 'bg-violet-50 dark:bg-violet-950/20', border: 'border-violet-200 dark:border-violet-900/50', badge: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
-  'system-design': { bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-900/50', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
-  behavioral: { bg: 'bg-sky-50 dark:bg-sky-950/20', border: 'border-sky-200 dark:border-sky-900/50', badge: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300' },
-  hr: { bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-200 dark:border-rose-900/50', badge: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300' }
-};
-
 export const QuestionsView = () => {
   const { company, role, experience, getCached, setCached, completedQuestions, bookmarkedQuestions, toggleQuestionCompleted, toggleQuestionBookmarked } = useInterviewStore();
   const cached = getCached('questions');
-  const [sections, setSections] = useState(cached);
+  // Backward compatibility: old format was sections-based {sections: [{questions: [...]}]}, new format is flat array
+  const normalizeQuestions = (data) => {
+    if (!data) return null;
+    if (Array.isArray(data)) return data;
+    if (data.sections && Array.isArray(data.sections)) {
+      return data.sections.flatMap(s => s.questions || []);
+    }
+    if (data.questions && Array.isArray(data.questions)) return data.questions;
+    return null;
+  };
+  const [questions, setQuestions] = useState(normalizeQuestions(cached));
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
@@ -32,13 +24,13 @@ export const QuestionsView = () => {
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
-    setSections(null);
+    setQuestions(null);
     try {
       const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
       let idToken = '';
       try {
         if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
-      } catch (_) {}
+      } catch (_) { }
       const headers = { 'Content-Type': 'application/json' };
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch(API_URL + '/api/questions/generate', {
@@ -51,9 +43,12 @@ export const QuestionsView = () => {
         throw new Error(errData?.error?.message || 'Request failed (' + response.status + ')');
       }
       const data = await response.json();
-      if (!data?.sections?.length) throw new Error('No questions were generated. Try again.');
-      setSections(data.sections);
-      setCached('questions', data.sections);
+      const generatedQuestions = data?.questions;
+      if (!generatedQuestions || !Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
+        throw new Error('No questions were generated. Try again.');
+      }
+      setQuestions(generatedQuestions);
+      setCached('questions', generatedQuestions);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -65,9 +60,14 @@ export const QuestionsView = () => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const allQuestions = sections ? sections.flatMap(s => s.questions) : [];
+  const getDifficultyColor = (difficulty) => {
+    const d = (difficulty || '').toLowerCase();
+    if (d === 'easy') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400';
+    if (d === 'medium') return 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400';
+    return 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400';
+  };
 
-  if (!generating && !sections && !error) {
+  if (!generating && !questions && !error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[460px] py-16 px-6 animate-in fade-in duration-300">
         <div className="relative mb-8">
@@ -108,7 +108,7 @@ export const QuestionsView = () => {
             <span className="h-2 w-2 bg-brand-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
             <span className="h-2 w-2 bg-brand-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
-          <span className="text-sm text-slate-500 dark:text-slate-400">Analyzing {company} interview patterns...</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">Generating {role}-specific questions...</span>
         </div>
         <div className="w-64 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-gradient-to-r from-brand-500 to-brand-600 rounded-full animate-pulse" style={{ width: '60%' }} />
@@ -132,6 +132,13 @@ export const QuestionsView = () => {
     );
   }
 
+  // Group questions by difficulty for display
+  const groupedByDifficulty = {
+    Easy: questions.filter(q => (q.difficulty || '').toLowerCase() === 'easy'),
+    Medium: questions.filter(q => (q.difficulty || '').toLowerCase() === 'medium'),
+    Hard: questions.filter(q => (q.difficulty || '').toLowerCase() === 'hard')
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -143,7 +150,7 @@ export const QuestionsView = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
-            {allQuestions.length} Questions
+            {questions.length} Questions
           </span>
           <button onClick={handleGenerate} disabled={generating}
             className="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 font-semibold text-[11px] rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
@@ -153,26 +160,26 @@ export const QuestionsView = () => {
         </div>
       </div>
 
-      {sections.map((section) => {
-        const Icon = SECTION_ICONS[section.id] || Brain;
-        const colors = SECTION_COLORS[section.id] || SECTION_COLORS.technical;
+      {['Easy', 'Medium', 'Hard'].map(difficulty => {
+        const diffQuestions = groupedByDifficulty[difficulty];
+        if (!diffQuestions || diffQuestions.length === 0) return null;
 
         return (
-          <div key={section.id} className={'rounded-xl border ' + colors.border + ' ' + colors.bg + ' overflow-hidden'}>
-            <div className={'px-5 py-3.5 border-b ' + colors.border + ' flex items-center gap-3'}>
-              <div className={'h-8 w-8 rounded-lg ' + colors.badge + ' flex items-center justify-center'}>
-                <Icon className="h-4 w-4" />
+          <div key={difficulty} className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                <Target className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{section.title}</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{difficulty} Questions</h3>
                 <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">
-                  Based on community-reported interview experiences and AI-generated preparation content.
+                  {diffQuestions.length} question{diffQuestions.length !== 1 ? 's' : ''} — {difficulty === 'Easy' ? 'Fundamental concepts and basic knowledge' : difficulty === 'Medium' ? 'Intermediate problem-solving and application' : 'Advanced concepts and complex scenarios'}
                 </p>
               </div>
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {section.questions.map((q) => {
+              {diffQuestions.map((q) => {
                 const isCompleted = completedQuestions.includes(q.id);
                 const isBookmarked = bookmarkedQuestions.includes(q.id);
                 const isExpanded = expandedId === q.id;
@@ -187,8 +194,7 @@ export const QuestionsView = () => {
                       </button>
                       <div className="flex-grow min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                          <span className={'text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ' + (q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400' : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400')}>{q.difficulty}</span>
-                          <span className="inline-flex items-center gap-1 text-[9px] text-slate-400 font-medium"><Clock className="h-3 w-3" />{q.estimatedTime}</span>
+                          <span className={'text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ' + getDifficultyColor(q.difficulty)}>{q.difficulty}</span>
                         </div>
                         <p className={'text-sm font-semibold leading-snug ' + (isCompleted ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white')}>{q.question}</p>
                       </div>
@@ -198,56 +204,39 @@ export const QuestionsView = () => {
                         >
                           <Bookmark className={'h-3.5 w-3.5 ' + (isBookmarked ? 'fill-current' : '')} />
                         </button>
-                        <ChevronDown className={'h-4 w-4 text-slate-400 transition-transform duration-200 ' + (isExpanded ? 'rotate-180' : '')} />
+                        {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                       </div>
                     </div>
 
                     {isExpanded && (
                       <div className="border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-950/20 px-5 py-5 md:px-6 md:py-6 space-y-5 text-xs animate-in slide-in-from-top-2 duration-150">
-                        <div className="space-y-1.5">
-                          <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider block text-[11px]">Why It Is Asked</span>
-                          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{q.whyAsked}</p>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider block text-[11px]">Expected Answer</span>
-                          <p className="text-slate-650 dark:text-slate-350 leading-relaxed">{q.expectedAnswer}</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <div className="space-y-2">
-                            <span className="font-bold text-slate-850 dark:text-slate-200 uppercase tracking-wider block text-[11px]">Common Mistakes</span>
-                            <div className="space-y-2">
-                              {q.commonMistakes && q.commonMistakes.map((m, idx) => (
-                                <div key={idx} className="flex gap-2 items-start">
-                                  <span className="h-1.5 w-1.5 bg-red-400 rounded-full mt-1.5 flex-shrink-0" />
-                                  <span className="text-slate-600 dark:text-slate-400 leading-normal font-medium">{m}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <span className="font-bold text-slate-850 dark:text-slate-200 uppercase tracking-wider block text-[11px]">AI Explanation</span>
-                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{q.aiExplanation || 'Understanding this concept deeply helps you answer variations of this question confidently.'}</p>
-                          </div>
-                        </div>
-
-                        {q.practiceHint && (
-                          <div className="flex items-start gap-2 p-3 bg-slate-100 dark:bg-slate-800/40 rounded-lg">
-                            <Lightbulb className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed"><strong className="text-slate-800 dark:text-slate-200">Practice hint:</strong> {q.practiceHint}</p>
+                        {q.answer && (
+                          <div className="space-y-1.5">
+                            <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider block text-[11px]">Answer</span>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{q.answer}</p>
                           </div>
                         )}
 
-                        {q.followUps && q.followUps.length > 0 && (
+                        {q.explanation && (
+                          <div className="space-y-1.5">
+                            <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider block text-[11px]">Explanation</span>
+                            <p className="text-slate-650 dark:text-slate-350 leading-relaxed">{q.explanation}</p>
+                          </div>
+                        )}
+
+                        {q.followUp && q.followUp.length > 0 && (
                           <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 space-y-2">
                             <span className="font-bold text-slate-850 dark:text-slate-200 uppercase tracking-wider block text-[11px]">Follow-up Questions</span>
                             <div className="space-y-1.5">
-                              {q.followUps.map((f, idx) => (
+                              {q.followUp.map((f, idx) => (
                                 <p key={idx} className="text-slate-500 dark:text-slate-405 italic leading-relaxed text-[11px]">&bull; "{f}"</p>
                               ))}
                             </div>
                           </div>
+                        )}
+
+                        {!q.answer && !q.explanation && (!q.followUp || q.followUp.length === 0) && (
+                          <p className="text-slate-400 dark:text-slate-500 italic">No additional details available for this question.</p>
                         )}
                       </div>
                     )}
@@ -261,3 +250,4 @@ export const QuestionsView = () => {
     </div>
   );
 };
+

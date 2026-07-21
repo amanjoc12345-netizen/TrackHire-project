@@ -8,13 +8,29 @@ import questionsRoute from "../server/routes/questions.js";
 import resourcesRoute from "../server/routes/resources.js";
 import roadmapRoute from "../server/routes/roadmap.js";
 import insightsRoute from "../server/routes/insights.js";
+import mockRoute from "../server/routes/mock.js";
 
 dotenv.config();
 
 const app = express();
 
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'https://ai-job-tracker-mu-umber.vercel.app',
+  'https://trackhire.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.SITE_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://trackhire.vercel.app'
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    console.log('Blocked by CORS:', origin);
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
 
@@ -52,6 +68,7 @@ app.use("/api/questions", questionsRoute);
 app.use("/api/resources", resourcesRoute);
 app.use("/api/roadmap", roadmapRoute);
 app.use("/api/insights", insightsRoute);
+app.use("/api/mock", mockRoute);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "healthy", timestamp: new Date().toISOString() });

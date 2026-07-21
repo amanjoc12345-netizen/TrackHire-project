@@ -3,6 +3,7 @@ import { Sparkles, Send, Mic, User, Check, X, MessageSquare } from 'lucide-react
 import { Button } from '../common/Button';
 import { auth } from '../../firebase/config';
 import { useInterviewStore } from '../../store/interviewStore';
+import { API_URL } from '../../config/api';
 
 export const CoachView = ({ activeTab = 'overview' }) => {
   const { company, role, experience } = useInterviewStore();
@@ -50,7 +51,7 @@ export const CoachView = ({ activeTab = 'overview' }) => {
     setIsTyping(true);
 
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
+      console.log('[CoachView] Sending request to:', `${API_URL}/api/coach`);
 
       const chatHistory = messages
         .filter(m => m.sender !== 'system')
@@ -65,8 +66,8 @@ export const CoachView = ({ activeTab = 'overview' }) => {
         if (auth?.currentUser) {
           idToken = await auth.currentUser.getIdToken();
         }
-      } catch (_) {
-        console.warn('[CoachView] Could not retrieve Firebase ID token.');
+      } catch (err) {
+        console.warn('[CoachView] Could not retrieve Firebase ID token:', err.message);
       }
 
       const authHeader = idToken ? { 'Authorization': `Bearer ${idToken}` } : {};
@@ -88,18 +89,24 @@ export const CoachView = ({ activeTab = 'overview' }) => {
       });
 
       if (!response.ok) {
-        let errMsg = 'Failed to get a response from your coach.';
+        let errMsg = `Server returned status ${response.status}`;
         try {
           const errData = await response.json();
+          console.error('[CoachView] Server error response:', errData);
           if (errData?.error?.message) {
             errMsg = errData.error.message;
           }
-        } catch (_) {}
+        } catch (parseErr) {
+          const textBody = await response.text().catch(() => '');
+          console.error('[CoachView] Non-JSON error response:', textBody);
+        }
         throw new Error(errMsg);
       }
 
       const data = await response.json();
-      const replyText = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response. Please try again.';
+      console.log('[CoachView] Coach response received, model:', data.model);
+
+      const replyText = data.response || data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response. Please try again.';
 
       const coachReply = {
         id: `c-${Date.now()}`,
@@ -109,7 +116,7 @@ export const CoachView = ({ activeTab = 'overview' }) => {
 
       setMessages(prev => [...prev, coachReply]);
     } catch (err) {
-      console.error(err);
+      console.error('[CoachView] Request failed:', err.message, err);
       const errorReply = {
         id: `c-err-${Date.now()}`,
         sender: 'coach',

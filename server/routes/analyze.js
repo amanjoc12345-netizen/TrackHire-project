@@ -1,141 +1,79 @@
-import express from 'express';
+import express from "express";
+import { generateJSON } from "../services/aiService.js";
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-  const { resumeText, jobDescription } = req.body;
-
-  if (!resumeText || !jobDescription) {
-    return res.status(400).json({
-      error: {
-        message: 'Both resumeText and jobDescription are required.'
-      }
-    });
-  }
-
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENCODE_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({
-      error: {
-        message: 'API key is missing on the server. Please configure OPENROUTER_API_KEY.'
-      }
-    });
-  }
-
-  // Determine if we should call the real OpenRouter API or use the local development mock proxy
-  const isRealOpenRouter = apiKey.startsWith('sk-or-');
-  const endpoint = isRealOpenRouter
-    ? 'https://openrouter.ai/api/v1/chat/completions'
-    : 'https://opencode.ai/zen/v1/chat/completions';
-
-  const modelName = isRealOpenRouter
-    ? (process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash')
-    : (process.env.OPENCODE_MODEL || process.env.OPENROUTER_MODEL || 'deepseek-v4-flash-free');
-
-  console.log(`[AI Analyzer] Routing request to: ${endpoint}`);
-  console.log(`[AI Analyzer] Requesting model: ${modelName}`);
-
-  const prompt = `
-You are an expert ATS Resume Analyzer. Always return valid JSON only.
-
-Analyze the provided resume text against the target job description.
-
-Return a valid JSON object matching this schema:
-
-{
-  "matchScore": 85,
-  "atsScore": 75,
-  "summary": "Summary text description of the candidate's alignment...",
-  "skillsFound": ["Skill A", "Skill B"],
-  "missingSkills": ["Skill C", "Skill D"],
-  "keywordMatch": ["Keyword A: High density", "Keyword B: Missing"],
-  "strengths": ["Strength detail 1", "Strength detail 2"],
-  "weaknesses": ["Weakness detail 1", "Weakness detail 2"],
-  "improvementSuggestions": ["Actionable step 1", "Actionable step 2"],
-  "missingTechnologies": ["Tech A", "Tech B"],
-  "importantKeywords": ["Keyword C", "Keyword D"],
-  "experienceAnalysis": "Assessment of candidate's experience fit...",
-  "educationAnalysis": "Assessment of education/credentials fit...",
-  "finalRecommendation": "Short recommendation summary..."
-}
-
-Resume Text:
-${resumeText}
-
-Job Description:
-${jobDescription}
-`;
-
+router.post("/", async (req, res) => {
   try {
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    };
+    const { resumeText, jobDescription } = req.body;
 
-    headers['HTTP-Referer'] = process.env.SITE_URL || 'https://trackhire.vercel.app';
-    headers['X-OpenRouter-Title'] = process.env.SITE_NAME || 'TrackHire';
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-    const response = await fetch(
-      endpoint,
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You are an expert ATS Resume Analyzer. Always return valid JSON only.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.3,
-          response_format: {
-            type: 'json_object'
-          }
-        }),
-        signal: controller.signal
-      }
-    );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      let errorBody;
-      try { errorBody = await response.json(); } catch { errorBody = await response.text(); }
-      console.error('[AI Analyzer] Error Response:', errorBody);
-
-      return res.status(response.status).json({
+    if (!resumeText || !jobDescription) {
+      return res.status(400).json({
         error: {
-          message:
-            errorBody?.error?.message ||
-            `API returned status ${response.status}`
+          message: "Both resumeText and jobDescription are required.",
         },
-        details: errorBody
       });
     }
 
-    const data = await response.json();
+    const prompt = `You are an expert ATS resume analyzer. Analyze the following resume against the job description.
 
-    console.log(`[AI Analyzer] Response successfully received. Model name used: ${data.model}`);
-    return res.json(data);
-  } catch (err) {
-    console.error('[AI Analyzer] Route Error:', err);
+RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
+- Output ONLY a valid JSON object. Nothing else.
+- No markdown formatting, no code fences, no backticks.
+- No explanations, notes, or any text before or after the JSON.
+- First character must be {.
+- Last character must be }.
+- Use double quotes for all strings and keys — no single quotes.
+- No trailing commas.
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "matchScore": <number 0-100>,
+  "atsScore": <number 0-100>,
+  "summary": "<2-3 sentence summary of how well the resume matches>",
+  "strengths": ["<strength1>", "<strength2>", ...],
+  "weaknesses": ["<weakness1>", "<weakness2>", ...],
+  "skillsFound": ["<skill1>", "<skill2>", ...],
+  "missingSkills": ["<missing1>", "<missing2>", ...],
+  "keywordMatch": <number 0-100>,
+  "missingTechnologies": ["<tech1>", "<tech2>", ...],
+  "improvementSuggestions": ["<suggestion1>", "<suggestion2>", ...],
+  "experienceAnalysis": "<assessment of experience relevance>",
+  "educationAnalysis": "<assessment of education fit>",
+  "finalRecommendation": "<final recommendation>"
+}`;
+
+    const parsed = await generateJSON(prompt, {
+      maxRetries: 1,
+      structureHint: "{matchScore, atsScore, summary, strengths, weaknesses, skillsFound, missingSkills, keywordMatch, missingTechnologies, improvementSuggestions, experienceAnalysis, educationAnalysis, finalRecommendation}",
+    });
+
+    // Wrap in OpenAI-compatible format for the frontend
+    return res.status(200).json({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify(parsed),
+          },
+        },
+      ],
+    });
+  } catch (error) {
+    console.error("[Analyze] Error:", error);
 
     return res.status(500).json({
       error: {
-        message: err.message || 'Internal Server Error'
-      }
+        message: error.message || "Internal Server Error",
+      },
     });
   }
 });
 
 export default router;
+

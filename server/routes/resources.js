@@ -1,131 +1,83 @@
-import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import express from "express";
+import { requireAuth } from "../middleware/auth.js";
+import { generateJSON } from "../services/aiService.js";
 
 const router = express.Router();
 
-router.post('/generate', requireAuth, async (req, res) => {
-  const { company, role, experience } = req.body;
+router.post("/generate", requireAuth, async (req, res) => {
+  try {
+    const { company, role, experience } = req.body;
 
-  if (!company || !role) {
-    return res.status(400).json({
-      error: { message: 'Both company and role are required.' }
-    });
-  }
+    if (!company || !role) {
+      return res.status(400).json({
+        error: { message: "Both company and role are required." },
+      });
+    }
 
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENCODE_API_KEY;
+    const prompt = `You are an expert learning curator. Recommend the best learning resources for interview preparation for:
 
-  if (!apiKey) {
-    return res.status(500).json({
-      error: { message: 'API key is missing on the server.' }
-    });
-  }
+Company: ${company}
+Role: ${role}
+Experience Level: ${experience || "Not specified"}
 
-  const isOpenRouterKey = apiKey.startsWith('sk-or-');
-  const endpoint = isOpenRouterKey
-    ? 'https://openrouter.ai/api/v1/chat/completions'
-    : 'https://opencode.ai/zen/v1/chat/completions';
+ROLE-SPECIFIC RESOURCES — You MUST recommend resources ONLY relevant to ${role}:
 
-  const modelName = isOpenRouterKey
-    ? (process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash')
-    : (process.env.OPENCODE_MODEL || process.env.OPENROUTER_MODEL || 'deepseek-v4-flash-free');
+- For Frontend Developer / React Developer: ONLY recommend resources about React, JavaScript, TypeScript, HTML, CSS, Frontend System Design, Web Performance. Do NOT recommend ML/AI/Backend resources.
+- For Backend Developer: ONLY recommend resources about Node.js, Express, Databases, System Design, APIs, Redis, Docker. Do NOT recommend frontend/ML resources.
+- For Full Stack Developer: Recommend resources covering both frontend and backend technologies, databases, deployment, authentication.
+- For AI/ML Engineer: ONLY recommend resources about Machine Learning, Deep Learning, LLMs, Python, NumPy, Pandas, TensorFlow, PyTorch, Kaggle, HuggingFace, Papers, DeepLearning.ai, FastAI, ML System Design. Do NOT recommend React or frontend resources.
+- For Data Analyst: ONLY recommend resources about SQL, Python, Data Visualization, Statistics, Excel, BI tools.
 
-  const systemPrompt = `You are an expert interview preparation resource curator. You generate high-quality learning resource recommendations tailored to specific roles and companies. Return ONLY valid JSON. No markdown, no code fences.`;
+STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
+- Output ONLY a valid JSON object. Nothing else.
+- No markdown formatting, no code fences, no backticks.
+- No explanations, notes, or any text before or after the JSON.
+- First character must be {.
+- Last character must be }.
+- Use double quotes for all strings and keys — no single quotes.
+- No trailing commas.
 
-  const userPrompt = `Generate curated learning resources for a ${role} position at ${company} (Experience: ${experience || 'Not specified'}). The resources must be specific to this role's tech stack.
-
-Return a JSON object with exactly this structure:
+Return ONLY a valid JSON object with this exact structure:
 {
   "categories": [
     {
-      "category": "Category Name",
+      "category": "<category name>",
       "items": [
         {
-          "id": "res1",
-          "type": "doc|video|article|course",
-          "name": "Resource title",
-          "url": "https://example.com/resource",
-          "time": "X min read/watch",
-          "description": "Brief description of what this resource covers"
+          "id": "res-<unique-id>",
+          "name": "<resource title>",
+          "url": "<full https url to the resource>",
+          "time": "<estimated time like 2 hours>",
+          "type": "video/article/doc/course"
         }
       ]
     }
   ]
 }
 
-Generate 4-6 categories with 2-4 items each. Categories must be relevant to the role:
-- For Frontend: React, JavaScript, CSS, Browser APIs, Performance
-- For Backend: Node.js, Databases, APIs, Auth, Caching
-- For AI/ML: Python, NumPy, PyTorch, ML Ops, Statistics
-- For Data Analyst: SQL, PowerBI, Statistics, Excel, Data Visualization
-- For Full Stack: Both frontend and backend topics
-- For React Developer: React ecosystem, State management, Testing, Next.js
+Include 3-5 categories with 2-4 items each. Use real, well-known resources (official docs, reputable courses, YouTube channels, books, practice platforms).
+ALL resources MUST be directly relevant to ${role}. Do NOT include resources for other roles.`;
 
-Company: ${company}
-Role: ${role}
-Experience: ${experience || 'Not specified'}`;
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
-  ];
-
-  console.log('\n--- [Resources Generate Request] ---');
-  console.log(`Company: ${company}, Role: ${role}, Experience: ${experience}`);
-
-  try {
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    };
-
-    headers['HTTP-Referer'] = process.env.SITE_URL || 'https://trackhire.vercel.app';
-    headers['X-OpenRouter-Title'] = process.env.SITE_NAME || 'TrackHire';
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: modelName,
-        messages,
-        temperature: 0.7,
-        response_format: { type: 'json_object' }
-      }),
-      signal: controller.signal
+    const parsed = await generateJSON(prompt, {
+      maxRetries: 1,
+      structureHint: "{categories: [{category, items: [{id, name, url, time, type}]}]}",
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      let errorBody;
-      try { errorBody = await response.json(); } catch { errorBody = await response.text(); }
-      console.error('[Resources Generate Error]:', errorBody);
-      return res.status(response.status).json({
-        error: { message: errorBody?.error?.message || `API returned status ${response.status}` }
-      });
+    if (!parsed?.categories?.length) {
+      throw new Error("No resources were generated.");
     }
 
-    const data = await response.json();
+    return res.status(200).json(parsed);
+  } catch (error) {
+    console.error("[Resources] Error:", error);
 
-    let resourcesData;
-    try {
-      resourcesData = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-    } catch {
-      resourcesData = { categories: [] };
-    }
-
-    console.log(`[Resources Generate] Model: ${data.model}, Categories: ${resourcesData.categories?.length || 0}`);
-    console.log('---------------------------------\n');
-
-    return res.json(resourcesData);
-  } catch (err) {
-    console.error('[Resources Generate Route Error]:', err);
     return res.status(500).json({
-      error: { message: err.message || 'Internal Server Error' }
+      error: {
+        message: error.message || "Internal Server Error",
+      },
     });
   }
 });
 
 export default router;
+
