@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BookOpen, Video, FileText, CheckCircle, Clock, Sparkles, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
 import { auth } from '../../firebase/config';
+import { API_URL } from '../../config/api';
 
 export const ResourcesView = () => {
   const { company, role, experience, getCached, setCached } = useInterviewStore();
@@ -21,11 +22,10 @@ export const ResourcesView = () => {
     setGenerating(true);
     setError(null);
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
       let idToken = '';
       try {
         if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
-      } catch (_) {}
+      } catch (_) { }
       const headers = { 'Content-Type': 'application/json' };
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch(API_URL + '/api/resources/generate', {
@@ -140,13 +140,12 @@ export const ResourcesView = () => {
                     className="bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-805 rounded-xl p-4.5 flex justify-between items-center gap-4 hover:border-slate-350 dark:hover:border-slate-700 shadow-3xs transition-all duration-150"
                   >
                     <div className="flex gap-3 items-start min-w-0">
-                      <div className={`p-2.5 rounded flex-shrink-0 ${
-                        item.type === 'doc' || item.type === 'article'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-955/35 dark:text-blue-400'
-                          : item.type === 'video'
+                      <div className={`p-2.5 rounded flex-shrink-0 ${item.type === 'doc' || item.type === 'article'
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-955/35 dark:text-blue-400'
+                        : item.type === 'video'
                           ? 'bg-red-50 text-red-650 dark:bg-red-955/35 dark:text-red-400'
                           : 'bg-purple-50 text-purple-650 dark:bg-purple-955/35 dark:text-purple-400'
-                      }`}>
+                        }`}>
                         {item.type === 'video' ? <Video className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
                       </div>
 
@@ -173,11 +172,10 @@ export const ResourcesView = () => {
                     <button
                       type="button"
                       onClick={() => toggleCompleted(item.id)}
-                      className={`p-1.5 rounded-lg border transition-colors cursor-pointer flex-shrink-0 ${
-                        isCompleted
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/50'
-                          : 'border-slate-200 dark:border-slate-850 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                      className={`p-1.5 rounded-lg border transition-colors cursor-pointer flex-shrink-0 ${isCompleted
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/50'
+                        : 'border-slate-200 dark:border-slate-850 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
                       title={isCompleted ? 'Mark incomplete' : 'Mark completed'}
                     >
                       <CheckCircle className={`h-4.5 w-4.5 ${isCompleted ? 'fill-emerald-100 dark:fill-transparent' : ''}`} />

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
 import { auth } from '../../firebase/config';
+import { API_URL } from '../../config/api';
 
 export const CompanyInsightsView = () => {
   const { company, role, experience, getCached, setCached } = useInterviewStore();
@@ -30,7 +31,6 @@ export const CompanyInsightsView = () => {
     setGenerating(true);
     setError(null);
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
       let idToken = '';
       try {
         if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
@@ -296,8 +296,8 @@ export const CompanyInsightsView = () => {
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-800 dark:text-slate-200">{exp.role}</span>
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${exp.outcome?.includes('Offer')
-                        ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400'
-                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450'
+                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400'
+                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450'
                       }`}>
                       {exp.outcome}
                     </span>

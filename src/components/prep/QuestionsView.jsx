@@ -2,6 +2,7 @@
 import { Sparkles, Bookmark, CheckCircle2, ChevronDown, ChevronUp, Clock, AlertCircle, Brain, Target, Lightbulb, RefreshCw, BookOpen, ArrowRight } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
 import { auth } from '../../firebase/config';
+import { API_URL } from '../../config/api';
 
 export const QuestionsView = () => {
   const { company, role, experience, getCached, setCached, completedQuestions, bookmarkedQuestions, toggleQuestionCompleted, toggleQuestionBookmarked } = useInterviewStore();
@@ -26,7 +27,6 @@ export const QuestionsView = () => {
     setError(null);
     setQuestions(null);
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
       let idToken = '';
       try {
         if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();

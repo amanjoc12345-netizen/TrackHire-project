@@ -7,6 +7,7 @@ import { AnalysisResult } from '../components/analyzer/AnalysisResult';
 import { HistoryCard } from '../components/analyzer/HistoryCard';
 import { AlertCircle, Brain, Play } from 'lucide-react';
 import { Button } from '../components/common/Button';
+import { API_URL } from '../config/api';
 
 export const ResumeAnalyzer = () => {
   const { user } = useAuthStore();
@@ -91,7 +92,6 @@ export const ResumeAnalyzer = () => {
     setAnalyzing(true);
 
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
       const response = await fetch(`${API_URL}/api/analyze`, {
         method: 'POST',
         headers: {
@@ -111,7 +111,7 @@ export const ResumeAnalyzer = () => {
           if (errData?.error?.message) {
             errDetails = errData.error.message;
           }
-        } catch (_) {}
+        } catch (_) { }
         throw new Error(errDetails);
       }
 
@@ -172,7 +172,7 @@ export const ResumeAnalyzer = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full flex flex-col gap-6 transition-colors duration-200">
-      
+
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -186,21 +186,21 @@ export const ResumeAnalyzer = () => {
 
       {activeAnalysis ? (
         /* Results View */
-        <AnalysisResult 
-          analysis={activeAnalysis} 
-          onBack={() => setActiveAnalysis(null)} 
+        <AnalysisResult
+          analysis={activeAnalysis}
+          onBack={() => setActiveAnalysis(null)}
         />
       ) : (
         /* Input & History grid layout */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
+
           {/* Main upload forms */}
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 shadow-2xs space-y-6">
-            
+
             {/* Resume File */}
-            <ResumeUploader 
-              onTextExtracted={handleTextExtracted} 
-              onClear={handleClearResume} 
+            <ResumeUploader
+              onTextExtracted={handleTextExtracted}
+              onClear={handleClearResume}
             />
 
             {/* Job Description Text */}
@@ -250,10 +250,10 @@ export const ResumeAnalyzer = () => {
 
       {/* Toast Notification */}
       {toast && (
-        <div 
+        <div
           className={`fixed bottom-5 right-5 flex items-center gap-2.5 px-4 py-3 rounded-lg border shadow-lg z-50 animate-in slide-in-from-bottom-5 duration-350
-            ${toast.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-955/90 dark:text-emerald-355 border-emerald-200 dark:border-emerald-900/50' 
+            ${toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-955/90 dark:text-emerald-355 border-emerald-200 dark:border-emerald-900/50'
               : 'bg-red-50 dark:bg-red-955/90 text-red-800 dark:text-red-350 border-red-200 dark:border-red-900/50'
             }`}
         >

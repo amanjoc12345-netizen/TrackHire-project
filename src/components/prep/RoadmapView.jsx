@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, Clock, BookOpen, ArrowUpRight, Sparkles, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import { useInterviewStore } from '../../store/interviewStore';
 import { auth } from '../../firebase/config';
+import { API_URL } from '../../config/api';
 
 export const RoadmapView = () => {
   const { company, role, experience, getCached, setCached, toggleRoadmapStep, roadmap: steps } = useInterviewStore();
@@ -14,11 +15,10 @@ export const RoadmapView = () => {
     setGenerating(true);
     setError(null);
     try {
-      const API_URL = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : 'http://localhost:5000')).replace(/\/$/, '');
       let idToken = '';
       try {
         if (auth?.currentUser) idToken = await auth.currentUser.getIdToken();
-      } catch (_) {}
+      } catch (_) { }
       const headers = { 'Content-Type': 'application/json' };
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch(API_URL + '/api/roadmap/generate', {
@@ -129,11 +129,10 @@ export const RoadmapView = () => {
             <div key={step.id} className="relative pl-10 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl hover:border-slate-350 dark:hover:border-slate-700 shadow-3xs transition-all duration-150">
               <div
                 onClick={() => handleToggle(step.id)}
-                className={`absolute left-[13px] top-6.5 h-5 w-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-200 ${
-                  isCompleted
-                    ? 'bg-brand-600 border-brand-600 text-white ring-4 ring-brand-100 dark:ring-brand-950/40'
-                    : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-brand-500 text-transparent'
-                }`}
+                className={`absolute left-[13px] top-6.5 h-5 w-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-200 ${isCompleted
+                  ? 'bg-brand-600 border-brand-600 text-white ring-4 ring-brand-100 dark:ring-brand-950/40'
+                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-brand-500 text-transparent'
+                  }`}
                 style={{ transform: 'translateX(-50%)' }}
               >
                 {isCompleted && (
@@ -145,11 +144,10 @@ export const RoadmapView = () => {
 
               <div className="space-y-1.5 max-w-lg">
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    isCompleted
-                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400'
-                      : 'bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-400'
-                  }`}>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${isCompleted
+                    ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400'
+                    : 'bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-400'
+                    }`}>
                     {isCompleted ? 'Completed' : 'Pending'}
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest">
@@ -157,9 +155,8 @@ export const RoadmapView = () => {
                   </span>
                 </div>
 
-                <h3 className={`text-sm font-bold transition-all ${
-                  isCompleted ? 'text-slate-450 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white'
-                }`}>
+                <h3 className={`text-sm font-bold transition-all ${isCompleted ? 'text-slate-450 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white'
+                  }`}>
                   {step.name}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
