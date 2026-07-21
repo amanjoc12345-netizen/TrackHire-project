@@ -73,7 +73,13 @@ Generate questions and descriptions that are 100% specific to ${role}. Do NOT us
 
         return res.status(200).json(parsed);
     } catch (error) {
-        console.error("[Mock Categories] Error:", error);
+        console.error("[Mock Categories] Error:", {
+            message: error.message,
+            stack: error.stack,
+            path: req.originalUrl,
+            method: req.method,
+            body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
+        });
 
         return res.status(500).json({
             error: {
@@ -149,7 +155,7 @@ If the user clearly typed gibberish, nonsense, or single throwaway words, the sc
         try {
             parsed = JSON.parse(jsonStr);
         } catch (parseErr) {
-            console.error("[Mock] Invalid JSON from AI. Raw response:", rawText);
+            console.error("[Mock] Invalid JSON from AI. Raw response (first 500 chars):", rawText?.substring(0, 500));
             console.error("[Mock] Extracted string that failed to parse:", jsonStr);
             return res.status(500).json({
                 error: {
@@ -170,7 +176,13 @@ If the user clearly typed gibberish, nonsense, or single throwaway words, the sc
             confidence: parsed.confidence || "Medium",
         });
     } catch (error) {
-        console.error("[Mock] Error:", error);
+        console.error("[Mock] Error:", {
+            message: error.message,
+            stack: error.stack,
+            path: req.originalUrl,
+            method: req.method,
+            body: { mockType: req.body?.mockType, company: req.body?.company, role: req.body?.role, experience: req.body?.experience, questionsCount: req.body?.questions?.length, answersCount: req.body?.answers?.length },
+        });
 
         return res.status(500).json({
             error: {

@@ -61,7 +61,13 @@ CRITICAL: "frequentlyAskedTopics" MUST contain 4-6 topics commonly asked at ${co
 
     return res.status(200).json(parsed);
   } catch (error) {
-    console.error("[Insights] Error:", error);
+    console.error("[Insights] Error:", {
+      message: error.message,
+      stack: error.stack,
+      path: req.originalUrl,
+      method: req.method,
+      body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
+    });
 
     return res.status(500).json({
       error: {

@@ -65,7 +65,13 @@ Return ONLY a valid JSON object with this exact structure:
       ],
     });
   } catch (error) {
-    console.error("[Analyze] Error:", error);
+    console.error("[Analyze] Error:", {
+      message: error.message,
+      stack: error.stack,
+      path: req.originalUrl,
+      method: req.method,
+      body: { resumeTextLength: req.body?.resumeText?.length || 0, jobDescriptionLength: req.body?.jobDescription?.length || 0 },
+    });
 
     return res.status(500).json({
       error: {

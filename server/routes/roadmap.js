@@ -69,7 +69,13 @@ Generate 6-10 comprehensive steps. Each step MUST be directly relevant to ${role
 
     return res.status(200).json(parsed);
   } catch (error) {
-    console.error("[Roadmap] Error:", error);
+    console.error("[Roadmap] Error:", {
+      message: error.message,
+      stack: error.stack,
+      path: req.originalUrl,
+      method: req.method,
+      body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
+    });
 
     return res.status(500).json({
       error: {

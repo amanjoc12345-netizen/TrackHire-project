@@ -8,12 +8,23 @@ if (!getApps().length) {
       ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
       : null;
   } catch (e) {
-    console.error('FATAL: FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON:', e.message);
-    process.exit(1);
+    // Log the error but DO NOT crash the server — fall back to default credentials
+    console.error(
+      '[Firebase] FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON: ' + e.message
+    );
+    console.error('[Firebase] Stack:', e.stack);
+    // process.exit(1) — REMOVED: crashing the server is worse than degraded auth
   }
 
   if (serviceAccount) {
-    initializeApp({ credential: cert(serviceAccount) });
+    try {
+      initializeApp({ credential: cert(serviceAccount) });
+      console.log('[Firebase] Initialized with service account credentials.');
+    } catch (initErr) {
+      console.error('[Firebase] Failed to initialize with service account:', initErr.message);
+      console.error('[Firebase] Falling back to application default credentials.');
+      initializeApp({ projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'careerpilot-ai-58262' });
+    }
   } else {
     console.warn(
       'WARNING: FIREBASE_SERVICE_ACCOUNT_KEY not set. '

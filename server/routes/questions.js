@@ -69,7 +69,13 @@ STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
 
     return res.status(200).json({ questions: parsed });
   } catch (error) {
-    console.error("[Questions] Error:", error);
+    console.error("[Questions] Error:", {
+      message: error.message,
+      stack: error.stack,
+      path: req.originalUrl,
+      method: req.method,
+      body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
+    });
 
     return res.status(500).json({
       error: {

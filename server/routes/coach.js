@@ -82,7 +82,16 @@ Help the user prepare for technical interviews.
       model: "openrouter",
     });
   } catch (error) {
-    console.error("[Coach] Error:", error);
+    const safeBody = { ...req.body };
+    delete safeBody.message; // Don't log potentially long user messages
+
+    console.error("[Coach] Error:", {
+      message: error.message,
+      stack: error.stack,
+      path: req.originalUrl,
+      method: req.method,
+      body: safeBody,
+    });
 
     return res.status(500).json({
       success: false,

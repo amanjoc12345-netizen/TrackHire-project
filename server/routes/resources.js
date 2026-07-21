@@ -69,7 +69,13 @@ ALL resources MUST be directly relevant to ${role}. Do NOT include resources for
 
     return res.status(200).json(parsed);
   } catch (error) {
-    console.error("[Resources] Error:", error);
+    console.error("[Resources] Error:", {
+      message: error.message,
+      stack: error.stack,
+      path: req.originalUrl,
+      method: req.method,
+      body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
+    });
 
     return res.status(500).json({
       error: {

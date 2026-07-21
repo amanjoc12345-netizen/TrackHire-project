@@ -71,7 +71,19 @@ app.use("/api/insights", insightsRoute);
 app.use("/api/mock", mockRoute);
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  const checks = {
+    server: "ok",
+    openrouter: typeof process.env.OPENROUTER_API_KEY === "string" && process.env.OPENROUTER_API_KEY.length > 0 ? "configured" : "missing",
+    firebase: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? "configured" : "missing (will use default credentials)",
+  };
+
+  const allOk = Object.values(checks).every((v) => v !== "error");
+
+  res.status(allOk ? 200 : 503).json({
+    status: allOk ? "healthy" : "degraded",
+    timestamp: new Date().toISOString(),
+    checks,
+  });
 });
 
 app.use("/api/*", (req, res) => {
@@ -83,7 +95,13 @@ app.use("/api/*", (req, res) => {
 });
 
 app.use((err, req, res, _next) => {
-  console.error("Global Error Handler caught:", err);
+  console.error("Global Error Handler caught:", {
+    message: err.message,
+    stack: err.stack,
+    path: req.originalUrl,
+    method: req.method,
+    status: err.status || 500,
+  });
 
   const cleanMessage = process.env.NODE_ENV === "production"
     ? "An internal server error occurred."
