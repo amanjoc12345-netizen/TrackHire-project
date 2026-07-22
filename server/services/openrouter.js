@@ -3,36 +3,41 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import OpenAI from "openai";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: join(__dirname, "..", ".env") });
-
-const openrouterKey = process.env.OPENROUTER_API_KEY;
-const geminiKey = process.env.GEMINI_API_KEY;
-
-// Primary Provider: OpenRouter
-let openrouterClient = null;
-if (openrouterKey && openrouterKey.trim().length > 0) {
-  openrouterClient = new OpenAI({
-    apiKey: openrouterKey.trim(),
-    baseURL: "https://openrouter.ai/api/v1",
-  });
-}
-
-// Secondary Provider: Google Gemini (OpenAI SDK compatible endpoint)
-let geminiClient = null;
-if (geminiKey && geminiKey.trim().length > 0) {
-  geminiClient = new OpenAI({
-    apiKey: geminiKey.trim(),
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-  });
-}
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  dotenv.config({ path: join(__dirname, "..", ".env") });
+} catch (_) {}
+dotenv.config();
 
 export const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
 
+function getOpenRouterClient() {
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (openrouterKey && openrouterKey.trim().length > 0) {
+    return new OpenAI({
+      apiKey: openrouterKey.trim(),
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+  }
+  return null;
+}
+
+function getGeminiClient() {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey && geminiKey.trim().length > 0) {
+    return new OpenAI({
+      apiKey: geminiKey.trim(),
+      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+    });
+  }
+  return null;
+}
+
 export async function generateContent(prompt, endpoint = "AI Service") {
   let lastError = null;
+  const openrouterClient = getOpenRouterClient();
+  const geminiClient = getGeminiClient();
 
   // 1. Attempt call with OpenRouter Primary if key exists
   if (openrouterClient) {
