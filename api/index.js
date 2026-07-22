@@ -45,20 +45,7 @@ const apiLimiter = rateLimit({
   message: { error: { message: 'Too many requests, please try again later.' } }
 });
 
-app.use('/api/', apiLimiter);
-
-app.use((req, res, next) => {
-  res.setTimeout(60000, () => {
-    if (!res.headersSent) {
-      res.status(504).json({
-        error: {
-          message: "Request timeout. The server took too long to respond."
-        }
-      });
-    }
-  });
-  next();
-});
+app.use(['/', '/api/'], apiLimiter);
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
@@ -67,15 +54,16 @@ process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception caught:", err);
 });
 
-app.use("/api/analyze", analyzeRoute);
-app.use("/api/coach", coachRoute);
-app.use("/api/questions", questionsRoute);
-app.use("/api/resources", resourcesRoute);
-app.use("/api/roadmap", roadmapRoute);
-app.use("/api/insights", insightsRoute);
-app.use("/api/mock", mockRoute);
+// Support both /api/* and /* routes for Vercel serverless rewrites
+app.use(["/analyze", "/api/analyze"], analyzeRoute);
+app.use(["/coach", "/api/coach"], coachRoute);
+app.use(["/questions", "/api/questions"], questionsRoute);
+app.use(["/resources", "/api/resources"], resourcesRoute);
+app.use(["/roadmap", "/api/roadmap"], roadmapRoute);
+app.use(["/insights", "/api/insights"], insightsRoute);
+app.use(["/mock", "/api/mock"], mockRoute);
 
-app.get("/api/health", (req, res) => {
+app.get(["/health", "/api/health"], (req, res) => {
   const checks = {
     server: "ok",
     openrouter: typeof process.env.OPENROUTER_API_KEY === "string" && process.env.OPENROUTER_API_KEY.length > 0 ? "configured" : "missing",
@@ -89,14 +77,6 @@ app.get("/api/health", (req, res) => {
     status: allOk ? "healthy" : "degraded",
     timestamp: new Date().toISOString(),
     checks,
-  });
-});
-
-app.use("/api/*", (req, res) => {
-  res.status(404).json({
-    error: {
-      message: `API Route not found: ${req.originalUrl}`
-    }
   });
 });
 
