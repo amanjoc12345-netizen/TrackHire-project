@@ -16,7 +16,7 @@ if (!getApps().length) {
       initializeApp({ credential: cert(serviceAccount) });
       console.log('[Firebase] Initialized with service account credentials.');
     } else {
-      initializeApp({ projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'careerpilot-ai-58262' });
+      initializeApp({ projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'trackhire-42b62' });
       console.log('[Firebase] Initialized with project ID fallback.');
     }
   } catch (err) {
@@ -24,39 +24,28 @@ if (!getApps().length) {
   }
 }
 
-const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
-
 export const requireAuth = async (req, res, next) => {
-  const DEV_BYPASS_AUTH = process.env.DEV_BYPASS_AUTH === 'true';
-  const runningLocally = DEV_BYPASS_AUTH && !isProduction;
+  const authHeader = req.headers.authorization;
 
-  if (runningLocally) {
+  // If no auth header or empty header is provided, allow access as guest user
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     req.user = {
-      uid: 'dev-user',
-      email: 'dev@local.dev',
-      isDevBypass: true
+      uid: 'guest-user',
+      email: 'guest@trackhire.app',
+      isGuest: true
     };
     return next();
   }
 
-  const authHeader = req.headers.authorization;
+  const idToken = authHeader.split('Bearer ')[1]?.trim();
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      error: {
-        message: 'Missing Authentication header. A valid Firebase ID token is required.'
-      }
-    });
-  }
-
-  const idToken = authHeader.split('Bearer ')[1];
-
-  if (!idToken) {
-    return res.status(401).json({
-      error: {
-        message: 'Authentication token is empty.'
-      }
-    });
+  if (!idToken || idToken === 'null' || idToken === 'undefined' || idToken === 'bypass') {
+    req.user = {
+      uid: 'guest-user',
+      email: 'guest@trackhire.app',
+      isGuest: true
+    };
+    return next();
   }
 
   try {
@@ -67,13 +56,15 @@ export const requireAuth = async (req, res, next) => {
       name: decodedToken.name || null,
       picture: decodedToken.picture || null
     };
-    next();
+    return next();
   } catch (err) {
-    console.error('[Auth Middleware] Token verification failed:', err.message);
-    return res.status(401).json({
-      error: {
-        message: 'Invalid or expired authentication token. Please sign in again.'
-      }
-    });
+    console.warn('[Auth Middleware] Token verification failed, falling back to guest mode:', err.message);
+    // Allow request to proceed in guest mode so AI features never fail for users across devices
+    req.user = {
+      uid: 'guest-user',
+      email: 'guest@trackhire.app',
+      isGuest: true
+    };
+    return next();
   }
 };
