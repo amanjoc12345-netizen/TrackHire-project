@@ -25,7 +25,9 @@ if (!apiKey) {
   });
 }
 
-export async function generateContent(prompt) {
+export const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openrouter/free";
+
+export async function generateContent(prompt, endpoint = "OpenRouter API") {
   if (!client) {
     throw new Error(
       "OpenRouter is not configured. Set the OPENROUTER_API_KEY environment variable."
@@ -34,7 +36,7 @@ export async function generateContent(prompt) {
 
   try {
     const completion = await client.chat.completions.create({
-      model: "openai/gpt-4.1-mini",
+      model: OPENROUTER_MODEL,
       max_tokens: 4096,
       messages: [
         {
@@ -44,16 +46,28 @@ export async function generateContent(prompt) {
       ],
     });
 
-    return completion.choices[0].message.content;
+    const text = completion.choices?.[0]?.message?.content || completion.choices?.[0]?.message?.reasoning || "";
+    return text;
   } catch (error) {
-    // Enhanced error logging with full details
+    const httpStatus = error.status || error.statusCode || error.response?.status || null;
+    const responseBody = error.error || error.response?.data || error.body || error.message || error;
+
+    console.error("[OpenRouter Error]", {
+      status: httpStatus,
+      responseBody,
+      model: OPENROUTER_MODEL,
+      endpoint,
+    });
+
     const errorDetails = {
       message: error.message,
       stack: error.stack,
-      status: error.status || error.code || null,
+      status: httpStatus,
       type: error.type || null,
+      model: OPENROUTER_MODEL,
+      endpoint,
     };
-    console.error("[OpenRouter] Error:", JSON.stringify(errorDetails, null, 2));
+    console.error("[OpenRouter] Details:", JSON.stringify(errorDetails, null, 2));
 
     // OpenAI SDK specific error handling
     if (error.status === 401) {

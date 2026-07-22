@@ -69,6 +69,7 @@ Generate questions and descriptions that are 100% specific to ${role}. Do NOT us
         const parsed = await generateJSON(prompt, {
             maxRetries: 1,
             structureHint: "{categories: [{id, label, description}]}",
+            endpoint: "/api/mock/categories",
         });
 
         return res.status(200).json(parsed);
@@ -146,7 +147,7 @@ Consider these factors when scoring:
 
 If the user clearly typed gibberish, nonsense, or single throwaway words, the score MUST be below 10. Never inflate scores.`;
 
-        const rawText = await generateContent(prompt);
+        const rawText = await generateContent(prompt, "/api/mock/evaluate");
 
         // Use the shared depth-counting JSON extractor
         const jsonStr = extractFirstJSON(rawText);

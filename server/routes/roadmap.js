@@ -61,6 +61,7 @@ Generate 6-10 comprehensive steps. Each step MUST be directly relevant to ${role
     const parsed = await generateJSON(prompt, {
       maxRetries: 1,
       structureHint: "{steps: [{id, name, description, estimatedTime, resourceLink, completed}]}",
+      endpoint: "/api/roadmap/generate",
     });
 
     if (!parsed?.steps?.length) {

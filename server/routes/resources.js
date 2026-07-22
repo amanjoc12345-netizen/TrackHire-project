@@ -61,6 +61,7 @@ ALL resources MUST be directly relevant to ${role}. Do NOT include resources for
     const parsed = await generateJSON(prompt, {
       maxRetries: 1,
       structureHint: "{categories: [{category, items: [{id, name, url, time, type}]}]}",
+      endpoint: "/api/resources/generate",
     });
 
     if (!parsed?.categories?.length) {

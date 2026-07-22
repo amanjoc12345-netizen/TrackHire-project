@@ -52,6 +52,7 @@ Return ONLY a valid JSON object with this exact structure:
     const parsed = await generateJSON(prompt, {
       maxRetries: 1,
       structureHint: "{matchScore, atsScore, summary, strengths, weaknesses, skillsFound, missingSkills, keywordMatch, missingTechnologies, improvementSuggestions, experienceAnalysis, educationAnalysis, finalRecommendation}",
+      endpoint: "/api/analyze",
     });
 
     // Wrap in OpenAI-compatible format for the frontend

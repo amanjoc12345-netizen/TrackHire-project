@@ -14,7 +14,7 @@ router.post("/generate", requireAuth, async (req, res) => {
       });
     }
 
-    const prompt = `You are an expert technical interviewer. Generate 20-30 comprehensive interview questions for the following role:
+    const prompt = `You are an expert technical interviewer. Generate 10-15 comprehensive interview questions for the following role:
 
 Company: ${company}
 Role: ${role}
@@ -31,7 +31,7 @@ ROLE-SPECIFIC TOPICS — You MUST generate questions ONLY relevant to this speci
 
 CRITICAL INSTRUCTIONS:
 - Return ONLY valid JSON. No markdown. No code fences. No backticks. No explanations.
-- The JSON must be an array of question objects with this exact structure. Generate 20-30 questions:
+- The JSON must be an array of question objects with this exact structure. Generate 10-15 questions:
 
 STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
 - Output ONLY a valid JSON array. Nothing else.
@@ -61,6 +61,7 @@ STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
     const parsed = await generateJSON(prompt, {
       maxRetries: 1,
       structureHint: "[{id, difficulty, question, answer, explanation, followUp}]",
+      endpoint: "/api/questions/generate",
     });
 
     if (!Array.isArray(parsed) || parsed.length === 0) {

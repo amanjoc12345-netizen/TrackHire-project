@@ -69,7 +69,7 @@ Help the user prepare for technical interviews.
       prompt.substring(0, 150) + "..."
     );
 
-    const response = await generateText(prompt);
+    const response = await generateText(prompt, "/api/coach");
 
     console.log(
       "[Coach] Response from OpenRouter:",

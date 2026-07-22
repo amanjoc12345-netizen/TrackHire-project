@@ -16,9 +16,12 @@ const app = express();
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
   'http://localhost:5000',
   'https://ai-job-tracker-mu-umber.vercel.app',
   'https://trackhire.vercel.app',
+  'https://track-hire-project.vercel.app',
   process.env.CLIENT_URL,
   process.env.SITE_URL,
 ].filter(Boolean);
@@ -43,7 +46,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 app.use((req, res, next) => {
-  res.setTimeout(25000, () => {
+  res.setTimeout(60000, () => {
     if (!res.headersSent) {
       res.status(504).json({
         error: {
@@ -103,9 +106,7 @@ app.use((err, req, res, _next) => {
     status: err.status || 500,
   });
 
-  const cleanMessage = process.env.NODE_ENV === "production"
-    ? "An internal server error occurred."
-    : (err.message || "Internal Server Error");
+  const cleanMessage = err.message || "Internal Server Error";
 
   res.status(err.status || 500).json({
     error: {

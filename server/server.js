@@ -31,9 +31,11 @@ const app = express();
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:3000",
   "http://localhost:5000",
   "https://ai-job-tracker-mu-umber.vercel.app",
   "https://trackhire.vercel.app",
+  "https://track-hire-project.vercel.app",
   process.env.CLIENT_URL,
   process.env.SITE_URL,
 ].filter(Boolean);
@@ -64,7 +66,7 @@ app.use(express.json({ limit: "10mb" }));
 ========================================== */
 
 app.use((req, res, next) => {
-  res.setTimeout(25000, () => {
+  res.setTimeout(60000, () => {
     if (!res.headersSent) {
       console.error(`[Timeout] Request timed out: ${req.method} ${req.originalUrl}`);
       res.status(504).json({

@@ -57,6 +57,7 @@ CRITICAL: "frequentlyAskedTopics" MUST contain 4-6 topics commonly asked at ${co
     const parsed = await generateJSON(prompt, {
       maxRetries: 1,
       structureHint: "{rounds, difficulty, culture, stages, frequentlyAskedTopics, salaryExpectations, preparationTips, recentTechnologies, expectations, tips, experiences}",
+      endpoint: "/api/insights/generate",
     });
 
     return res.status(200).json(parsed);

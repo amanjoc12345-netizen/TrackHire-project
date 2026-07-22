@@ -101,7 +101,7 @@ export { extractFirstJSON };
  * @throws {Error} If JSON parsing fails after all retries
  */
 export async function generateJSON(prompt, options = {}) {
-    const { maxRetries = 1, structureHint = "" } = options;
+    const { maxRetries = 1, structureHint = "", endpoint = "" } = options;
 
     let lastError = null;
 
@@ -122,7 +122,7 @@ export async function generateJSON(prompt, options = {}) {
         }
 
         try {
-            const rawText = await generateContent(currentPrompt);
+            const rawText = await generateContent(currentPrompt, endpoint);
             const jsonStr = extractFirstJSON(rawText);
 
             if (!jsonStr || (jsonStr[0] !== "{" && jsonStr[0] !== "[")) {
@@ -162,9 +162,10 @@ export async function generateJSON(prompt, options = {}) {
  * Used for the Coach feature where free-form text is expected.
  *
  * @param {string} prompt
+ * @param {string} endpoint
  * @returns {Promise<string>}
  */
-export async function generateText(prompt) {
-    return generateContent(prompt);
+export async function generateText(prompt, endpoint = "") {
+    return generateContent(prompt, endpoint);
 }
 
