@@ -68,6 +68,7 @@ ALL resources MUST be directly relevant to ${role}. Do NOT include resources for
       throw new Error("No resources were generated.");
     }
 
+    if (res.headersSent) return;
     return res.status(200).json(parsed);
   } catch (error) {
     console.error("[Resources] Error:", {
@@ -78,6 +79,7 @@ ALL resources MUST be directly relevant to ${role}. Do NOT include resources for
       body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
     });
 
+    if (res.headersSent) return;
     return res.status(500).json({
       error: {
         message: error.message || "Internal Server Error",

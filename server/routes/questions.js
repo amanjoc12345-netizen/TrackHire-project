@@ -68,6 +68,7 @@ STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
       throw new Error("No questions were generated.");
     }
 
+    if (res.headersSent) return;
     return res.status(200).json({ questions: parsed });
   } catch (error) {
     console.error("[Questions] Error:", {
@@ -78,6 +79,7 @@ STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
       body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
     });
 
+    if (res.headersSent) return;
     return res.status(500).json({
       error: {
         message: error.message || "Internal Server Error",

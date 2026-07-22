@@ -68,6 +68,7 @@ Generate 6-10 comprehensive steps. Each step MUST be directly relevant to ${role
       throw new Error("No roadmap steps were generated.");
     }
 
+    if (res.headersSent) return;
     return res.status(200).json(parsed);
   } catch (error) {
     console.error("[Roadmap] Error:", {
@@ -78,6 +79,7 @@ Generate 6-10 comprehensive steps. Each step MUST be directly relevant to ${role
       body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
     });
 
+    if (res.headersSent) return;
     return res.status(500).json({
       error: {
         message: error.message || "Internal Server Error",

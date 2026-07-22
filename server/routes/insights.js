@@ -60,6 +60,7 @@ CRITICAL: "frequentlyAskedTopics" MUST contain 4-6 topics commonly asked at ${co
       endpoint: "/api/insights/generate",
     });
 
+    if (res.headersSent) return;
     return res.status(200).json(parsed);
   } catch (error) {
     console.error("[Insights] Error:", {
@@ -70,6 +71,7 @@ CRITICAL: "frequentlyAskedTopics" MUST contain 4-6 topics commonly asked at ${co
       body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
     });
 
+    if (res.headersSent) return;
     return res.status(500).json({
       error: {
         message: error.message || "Internal Server Error",

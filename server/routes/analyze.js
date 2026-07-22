@@ -56,6 +56,7 @@ Return ONLY a valid JSON object with this exact structure:
     });
 
     // Wrap in OpenAI-compatible format for the frontend
+    if (res.headersSent) return;
     return res.status(200).json({
       choices: [
         {
@@ -74,6 +75,7 @@ Return ONLY a valid JSON object with this exact structure:
       body: { resumeTextLength: req.body?.resumeText?.length || 0, jobDescriptionLength: req.body?.jobDescription?.length || 0 },
     });
 
+    if (res.headersSent) return;
     return res.status(500).json({
       error: {
         message: error.message || "Internal Server Error",

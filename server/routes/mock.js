@@ -72,6 +72,7 @@ Generate questions and descriptions that are 100% specific to ${role}. Do NOT us
             endpoint: "/api/mock/categories",
         });
 
+        if (res.headersSent) return;
         return res.status(200).json(parsed);
     } catch (error) {
         console.error("[Mock Categories] Error:", {
@@ -82,6 +83,7 @@ Generate questions and descriptions that are 100% specific to ${role}. Do NOT us
             body: { company: req.body?.company, role: req.body?.role, experience: req.body?.experience },
         });
 
+        if (res.headersSent) return;
         return res.status(500).json({
             error: {
                 message: error.message || "Internal Server Error",
@@ -158,6 +160,7 @@ If the user clearly typed gibberish, nonsense, or single throwaway words, the sc
         } catch (parseErr) {
             console.error("[Mock] Invalid JSON from AI. Raw response (first 500 chars):", rawText?.substring(0, 500));
             console.error("[Mock] Extracted string that failed to parse:", jsonStr);
+            if (res.headersSent) return;
             return res.status(500).json({
                 error: {
                     message: "The AI returned an invalid evaluation. Please try again.",
@@ -168,6 +171,7 @@ If the user clearly typed gibberish, nonsense, or single throwaway words, the sc
         // Ensure score is within bounds
         const score = Math.max(0, Math.min(100, Math.round(parsed.score || 0)));
 
+        if (res.headersSent) return;
         return res.status(200).json({
             score,
             strengths: parsed.strengths || [],
@@ -185,6 +189,7 @@ If the user clearly typed gibberish, nonsense, or single throwaway words, the sc
             body: { mockType: req.body?.mockType, company: req.body?.company, role: req.body?.role, experience: req.body?.experience, questionsCount: req.body?.questions?.length, answersCount: req.body?.answers?.length },
         });
 
+        if (res.headersSent) return;
         return res.status(500).json({
             error: {
                 message: error.message || "Internal Server Error",

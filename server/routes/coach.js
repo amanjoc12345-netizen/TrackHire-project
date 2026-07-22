@@ -76,6 +76,7 @@ Help the user prepare for technical interviews.
       response?.substring?.(0, 150) || response
     );
 
+    if (res.headersSent) return;
     return res.status(200).json({
       success: true,
       response,
@@ -93,6 +94,7 @@ Help the user prepare for technical interviews.
       body: safeBody,
     });
 
+    if (res.headersSent) return;
     return res.status(500).json({
       success: false,
       error: {
