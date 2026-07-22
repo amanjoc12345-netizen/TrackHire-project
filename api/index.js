@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import rateLimit from "express-rate-limit";
 import analyzeRoute from "../server/routes/analyze.js";
 import coachRoute from "../server/routes/coach.js";
 import questionsRoute from "../server/routes/questions.js";
@@ -37,15 +36,8 @@ app.use(cors({
   },
   credentials: true,
 }));
+
 app.use(express.json({ limit: '10mb' }));
-
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  message: { error: { message: 'Too many requests, please try again later.' } }
-});
-
-app.use(['/', '/api/'], apiLimiter);
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
@@ -98,4 +90,6 @@ app.use((err, req, res, _next) => {
   });
 });
 
-export default app;
+export default function handler(req, res) {
+  return app(req, res);
+}
