@@ -62,6 +62,7 @@ ALL resources MUST be directly relevant to ${role}. Do NOT include resources for
       maxRetries: 1,
       structureHint: "{categories: [{category, items: [{id, name, url, time, type}]}]}",
       endpoint: "/api/resources/generate",
+      params: { company, role, experience },
     });
 
     if (!parsed?.categories?.length) {

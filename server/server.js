@@ -43,12 +43,11 @@ const ALLOWED_ORIGINS = [
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow Postman, curl, mobile apps, etc.
       if (!origin) {
         return callback(null, true);
       }
 
-      if (ALLOWED_ORIGINS.includes(origin)) {
+      if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith(".vercel.app")) {
         return callback(null, true);
       }
 
@@ -103,6 +102,7 @@ app.get("/api/health", (req, res) => {
   const checks = {
     server: "ok",
     openrouter: typeof process.env.OPENROUTER_API_KEY === "string" && process.env.OPENROUTER_API_KEY.length > 0 ? "configured" : "missing",
+    gemini: typeof process.env.GEMINI_API_KEY === "string" && process.env.GEMINI_API_KEY.length > 0 ? "configured" : "missing",
     firebase: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? "configured" : "missing (will use default credentials)",
   };
 

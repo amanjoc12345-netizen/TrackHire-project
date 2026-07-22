@@ -62,6 +62,7 @@ STRICT JSON OUTPUT REQUIREMENTS — Follow EVERY rule:
       maxRetries: 1,
       structureHint: "[{id, difficulty, question, answer, explanation, followUp}]",
       endpoint: "/api/questions/generate",
+      params: { company, role, experience },
     });
 
     if (!Array.isArray(parsed) || parsed.length === 0) {

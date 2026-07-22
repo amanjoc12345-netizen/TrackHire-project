@@ -62,6 +62,7 @@ Generate 6-10 comprehensive steps. Each step MUST be directly relevant to ${role
       maxRetries: 1,
       structureHint: "{steps: [{id, name, description, estimatedTime, resourceLink, completed}]}",
       endpoint: "/api/roadmap/generate",
+      params: { company, role, experience },
     });
 
     if (!parsed?.steps?.length) {

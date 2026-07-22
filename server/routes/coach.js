@@ -65,14 +65,14 @@ Help the user prepare for technical interviews.
     prompt += `\nUser Question:\n${message}`;
 
     console.log(
-      "[Coach] Prompt sent to OpenRouter:",
+      "[Coach] Prompt sent to AI:",
       prompt.substring(0, 150) + "..."
     );
 
     const response = await generateText(prompt, "/api/coach");
 
     console.log(
-      "[Coach] Response from OpenRouter:",
+      "[Coach] Response from AI:",
       response?.substring?.(0, 150) || response
     );
 
@@ -80,11 +80,11 @@ Help the user prepare for technical interviews.
     return res.status(200).json({
       success: true,
       response,
-      model: "openrouter",
+      model: "ai-provider",
     });
   } catch (error) {
     const safeBody = { ...req.body };
-    delete safeBody.message; // Don't log potentially long user messages
+    delete safeBody.message;
 
     console.error("[Coach] Error:", {
       message: error.message,
@@ -93,6 +93,25 @@ Help the user prepare for technical interviews.
       method: req.method,
       body: safeBody,
     });
+
+    const isRateLimit =
+      error.message?.includes("rate limit") ||
+      error.message?.includes("Rate limit") ||
+      error.message?.includes("429");
+
+    if (isRateLimit) {
+      if (res.headersSent) return;
+      return res.status(200).json({
+        success: true,
+        response: `⚠️ **OpenRouter Rate Limit Reached (Daily Cap Exceeded)**\n\n` +
+          `The OpenRouter API key daily free limit (50 requests/day) has been reached.\n\n` +
+          `**Options to fix this:**\n` +
+          `1. **Add a free Gemini Key (Recommended):** Get a free key at [Google AI Studio](https://aistudio.google.com/) (1,500 free requests/day) and set \`GEMINI_API_KEY=your_key\` in your \`server/.env\` file.\n` +
+          `2. **Top Up OpenRouter:** Add $5-$10 credits at [OpenRouter Credits](https://openrouter.ai/settings/credits) to remove daily caps.\n` +
+          `3. **Wait:** The OpenRouter free daily quota resets every 24 hours.`,
+        model: "rate-limit-notice",
+      });
+    }
 
     if (res.headersSent) return;
     return res.status(500).json({
@@ -105,4 +124,3 @@ Help the user prepare for technical interviews.
 });
 
 export default router;
-

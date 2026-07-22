@@ -58,6 +58,7 @@ CRITICAL: "frequentlyAskedTopics" MUST contain 4-6 topics commonly asked at ${co
       maxRetries: 1,
       structureHint: "{rounds, difficulty, culture, stages, frequentlyAskedTopics, salaryExpectations, preparationTips, recentTechnologies, expectations, tips, experiences}",
       endpoint: "/api/insights/generate",
+      params: { company, role, experience },
     });
 
     if (res.headersSent) return;

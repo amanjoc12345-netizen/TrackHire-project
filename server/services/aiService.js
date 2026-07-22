@@ -1,4 +1,10 @@
 import { generateContent } from "./openrouter.js";
+import {
+    getFallbackInsights,
+    getFallbackQuestions,
+    getFallbackRoadmap,
+    getFallbackResources
+} from "./fallbackData.js";
 
 /**
  * Extract the first complete JSON value (object or array) from a string.
@@ -91,17 +97,18 @@ function extractFirstJSON(rawText) {
 export { extractFirstJSON };
 
 /**
- * Generate structured JSON data from an AI prompt with built-in retry logic.
+ * Generate structured JSON data from an AI prompt with built-in retry logic & fallback support.
  *
  * @param {string} prompt - The prompt to send to the AI
  * @param {object} options
  * @param {number} options.maxRetries - Number of retries on JSON parse failure (default: 1)
  * @param {string} options.structureHint - Description of expected JSON structure (for retry prompt)
+ * @param {string} options.endpoint - Route name for fallback handling
+ * @param {object} options.params - Request parameters (company, role, experience)
  * @returns {Promise<object>} Parsed JSON object
- * @throws {Error} If JSON parsing fails after all retries
  */
 export async function generateJSON(prompt, options = {}) {
-    const { maxRetries = 1, structureHint = "", endpoint = "" } = options;
+    const { maxRetries = 1, structureHint = "", endpoint = "", params = {} } = options;
 
     let lastError = null;
 
@@ -136,6 +143,31 @@ export async function generateJSON(prompt, options = {}) {
         } catch (error) {
             lastError = error;
 
+            const isRateLimit =
+                error.message?.includes("rate limit") ||
+                error.message?.includes("Rate limit") ||
+                error.message?.includes("429");
+
+            if (isRateLimit && endpoint) {
+                console.warn(`[aiService] API rate limit hit for ${endpoint}. Serving fallback dataset.`);
+                const company = params.company || "Target Company";
+                const role = params.role || "Software Engineer";
+                const experience = params.experience || "Intermediate";
+
+                if (endpoint.includes("insights")) {
+                    return getFallbackInsights(company, role, experience);
+                }
+                if (endpoint.includes("questions")) {
+                    return getFallbackQuestions(company, role, experience);
+                }
+                if (endpoint.includes("roadmap")) {
+                    return getFallbackRoadmap(company, role, experience);
+                }
+                if (endpoint.includes("resources")) {
+                    return getFallbackResources(company, role, experience);
+                }
+            }
+
             if (attempt < maxRetries) {
                 console.warn(
                     `[aiService] JSON parse failed (attempt ${attempt + 1}/${maxRetries + 1}):`,
@@ -153,7 +185,6 @@ export async function generateJSON(prompt, options = {}) {
         }
     }
 
-    // Should never reach here
     throw new Error("Unexpected error in generateJSON");
 }
 
@@ -168,4 +199,3 @@ export async function generateJSON(prompt, options = {}) {
 export async function generateText(prompt, endpoint = "") {
     return generateContent(prompt, endpoint);
 }
-
