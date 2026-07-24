@@ -103,12 +103,11 @@ Help the user prepare for technical interviews.
       if (res.headersSent) return;
       return res.status(200).json({
         success: true,
-        response: `⚠️ **OpenRouter Rate Limit Reached (Daily Cap Exceeded)**\n\n` +
-          `The OpenRouter API key daily free limit (50 requests/day) has been reached.\n\n` +
+        response: `⚠️ **AI Rate Limit Reached**\n\n` +
           `**Options to fix this:**\n` +
-          `1. **Add a free Gemini Key (Recommended):** Get a free key at [Google AI Studio](https://aistudio.google.com/) (1,500 free requests/day) and set \`GEMINI_API_KEY=your_key\` in your \`server/.env\` file.\n` +
-          `2. **Top Up OpenRouter:** Add $5-$10 credits at [OpenRouter Credits](https://openrouter.ai/settings/credits) to remove daily caps.\n` +
-          `3. **Wait:** The OpenRouter free daily quota resets every 24 hours.`,
+          `1. **Add a free Groq AI Key (Recommended):** Get a free key at [Groq Console](https://console.groq.com/) and set \`GROQ_API_KEY=your_key\` in your \`server/.env\` file.\n` +
+          `2. **Add a Gemini Key:** Get a free key at [Google AI Studio](https://aistudio.google.com/) and set \`GEMINI_API_KEY=your_key\` in your \`server/.env\` file.\n` +
+          `3. **Top Up OpenRouter:** Add credits at [OpenRouter Credits](https://openrouter.ai/settings/credits).`,
         model: "rate-limit-notice",
       });
     }

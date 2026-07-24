@@ -30,7 +30,7 @@ export const Footer = () => {
               <span>TrackHire &copy; {currentYear}</span>
               <span>&bull;</span>
               <span className="flex items-center gap-0.5">
-                Built with <Heart className="h-3 w-3 text-red-500 fill-red-500" /> by Aman joshi
+                Built with <Heart className="h-3 w-3 text-red-500 fill-red-500" /> by Aman Joshi
               </span>
             </div>
           </div>

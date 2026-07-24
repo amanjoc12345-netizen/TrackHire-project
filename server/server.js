@@ -101,6 +101,7 @@ app.use("/api", apiLimiter);
 app.get("/api/health", (req, res) => {
   const checks = {
     server: "ok",
+    groq: typeof process.env.GROQ_API_KEY === "string" && process.env.GROQ_API_KEY.length > 0 ? "configured" : "missing",
     openrouter: typeof process.env.OPENROUTER_API_KEY === "string" && process.env.OPENROUTER_API_KEY.length > 0 ? "configured" : "missing",
     gemini: typeof process.env.GEMINI_API_KEY === "string" && process.env.GEMINI_API_KEY.length > 0 ? "configured" : "missing",
     firebase: process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? "configured" : "missing (will use default credentials)",
